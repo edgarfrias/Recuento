@@ -105,6 +105,12 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--board)}
 .lnk{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:14px;padding:4px 2px;cursor:pointer}
 select.lnk{width:auto;text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:5px 8px;border-radius:8px}
 
+.alts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 12px;font-size:13px;color:var(--muted)}
+.altc{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:14px;font-weight:600;cursor:pointer}
+.last.dud{border-left-color:var(--warn)}
+.rev{padding:10px 0;border-top:1px solid var(--line)}
+.rev .rt b{display:block}.rev .rt small{color:var(--muted)}
+.rev .links{margin-top:6px;gap:6px}
 /* list */
 .tools{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .item{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
@@ -236,6 +242,12 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
         <input id="txt" placeholder="leche 12 · o dicta con el micro del teclado" autocomplete="off" enterkeyhint="send">
         <button class="btn amber" type="submit">Añadir</button>
       </form>
+      <div class="modeRow"><span>Cuando dude</span>
+        <div class="seg" id="askSeg"><button data-a="0" class="act">Apuntar y seguir</button><button data-a="1">Preguntarme</button></div>
+      </div>
+      <div class="modeRow"><span>En modo bolsillo, decirme</span>
+        <div class="seg" id="fbSeg"><button data-f="all" class="act">Todo</button><button data-f="doubt">Solo dudas</button></div>
+      </div>
       <div class="modeRow"><span>Si repites un artículo en la misma zona</span>
         <div class="seg" id="mode"><button data-m="add" class="act">Sumar</button><button data-m="set">Sustituir</button></div>
       </div>
@@ -249,9 +261,10 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
         <summary>Qué puedo decir</summary>
         <ul>
           <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>. Una zona nueva se crea sola.</li>
-          <li>Artículo y cantidad, en cualquier orden y con el nombre aproximado: <q>doce leche</q>, <q>bitel 74</q>, <q>vaso de ocho onzas 800</q>.</li>
+          <li>Artículo y cantidad, en cualquier orden y con el nombre aproximado: <q>doce leche</q>, <q>bitel 74</q>, <q>vaso de ocho onzas 800</q>. Nunca te para a preguntar: si duda, lo deja en «Para revisar».</li>
           <li>Decimales: <q>cuatro coma cinco</q>, <q>dos y medio</q>.</li>
-          <li>Si te pregunta: <q>sí</q>, <q>no</q>, <q>dos</q>, <q>el segundo</q>.</li>
+          <li>Varios seguidos sin parar: <q>leche doce, bitel setenta y cuatro, kas limón veintidós</q>.</li>
+          <li>Si se equivoca, corrígelo al momento: <q>no</q> (pasa a la siguiente opción), <q>no, la veri pequeña</q>, <q>no, quince</q> (cambia la cantidad).</li>
           <li>Preguntas: <q>¿cuánto hay en la barra?</q>, <q>¿cuánta leche hay?</q>, <q>resumen general</q>.</li>
           <li><q>corrige leche trece</q> cambia la cantidad de la zona actual. <q>deshacer</q> anula lo último.</li>
         </ul>
@@ -272,6 +285,11 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
 
   <!-- RESUMEN -->
   <section class="view" id="v-resumen">
+    <div class="panel" id="revPanel" hidden>
+      <h2>Para revisar <span class="hint" id="revN"></span></h2>
+      <div class="hint">Artículos que la app apuntó con dudas. Toca ✓ si está bien o elige el correcto.</div>
+      <div id="revList"></div>
+    </div>
     <div class="zones" id="sumZones"></div>
     <div class="panel">
       <h2><span id="sumTitle">Resumen</span><button class="btn sm" id="sumSpeak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Leer</button></h2>
@@ -308,7 +326,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
 <nav class="tabbar" id="tabbar">
   <button data-v="contar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>Contar<span class="badge" id="pendBadge" hidden></span></button>
   <button data-v="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>Lista</button>
-  <button data-v="resumen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumen</button>
+  <button data-v="resumen"><span class="badge" id="revBadge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumen</button>
   <button data-v="exportar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Exportar</button>
 </nav>
 
@@ -689,12 +707,39 @@ function parseCommand(cat,zones,raw){
   return null;
 }
 
+/* ---------- several items in one breath: "leche doce agua bitel setenta y cuatro" ---------- */
+function parseMulti(cat,raw){
+  const single=parsePhrase(cat,raw);
+  if(!single||single.cmd)return single?[single]:[];
+  const tk=norm(raw).replace(/[,.]+$/,"").split(" ").filter(Boolean);
+  const runs=numberRuns(tk);
+  const topOf=r=>r&&r.cands&&r.cands[0]?r.cands[0].s:0;
+  let best={items:[single],score:topOf(single)-(single.qty==null?.2:0)};
+  if(runs.length>=2){
+    const tryCut=cuts=>{
+      const segs=[];let a=0;
+      for(const c of cuts){segs.push(tk.slice(a,c));a=c}
+      segs.push(tk.slice(a));
+      if(segs.some(s=>!s.length))return;
+      const items=segs.map(s=>parsePhrase(cat,s.join(" ")));
+      if(items.some(r=>!r||r.cmd||r.qty==null||!r.query))return;
+      const sc=items.reduce((x,r)=>x+topOf(r),0)/items.length;
+      if(sc>best.score+.05)best={items,score:sc};
+    };
+    // name-qty name-qty: cut after each number run except the last
+    tryCut(runs.slice(0,-1).map(r=>r.end+1));
+    // qty-name qty-name: cut before each number run except the first
+    tryCut(runs.slice(1).map(r=>r.start));
+  }
+  return best.items;
+}
+
 
 /* ================= state ================= */
 const KEY="recuento-v3";
 const NOZONE="_sin";
 const defZones=()=>DEFAULT_ZONES.map(z=>({id:z[0],name:z[1],alias:z[2].split("|")}));
-let S={company:"",resp:"",mode:"add",voiceFb:true,lex:{},locals:[],cur:null};
+let S={company:"",resp:"",mode:"add",voiceFb:true,fb:"all",ask:false,lex:{},locals:[],cur:null};
 let L=null; // current local
 const uid=()=>Math.random().toString(36).slice(2,9);
 
@@ -749,21 +794,78 @@ const counted=()=>L.items.filter(p=>total(p.id)!=null).length;
 
 /* ================= counting ================= */
 let lastAct=null;
-function applyCount(pid,qty,mode,src){
+function applyCount(pid,qty,mode,src,meta){
+  meta=meta||{};
   const z=curZone(),prev=zq(pid,z),m=mode||S.mode;
   const next=(m==="add"&&prev!=null)?round(prev+qty):qty;
   setZq(pid,z,next);
-  L.log.unshift({t:Date.now(),pid,zone:z,prev,next,src:src||""});if(L.log.length>800)L.log.length=800;
+  const e={t:Date.now(),pid,zone:z,prev,next,qty,mode:m,src:src||"",alts:meta.alts||[],query:meta.query||"",dud:!!meta.dud,tag:meta.tag||null};
+  L.log.unshift(e);if(L.log.length>800)L.log.length=800;
   save();
   const p=byId(pid),tot=total(pid),multi=Object.keys(L.counts[pid]||{}).length>1;
-  lastAct={pid,z,prev,qty,next,tot,multi,m};
+  lastAct={pid,z,prev,qty,next,tot,multi,m,e};
   renderAll(pid);
-  feedback(`${spokenName(p)}, ${fmt(next)}${multi?`. Total ${fmt(tot)}`:""}`,`${label(p)}: ${fmt(next)}${multi?` (total ${fmt(tot)})`:""}`,1);
+  const say=`${meta.fixed?"Vale, ":""}${spokenName(p)}, ${fmt(next)}${multi&&!meta.fixed?`. Total ${fmt(tot)}`:""}`;
+  feedback(say,`${meta.dud?"¿":""}${label(p)}: ${fmt(next)}${meta.dud?"?":""}${multi?` (total ${fmt(tot)})`:""}`,meta.dud?2:1,meta.dud||meta.fixed);
+}
+// take an entry back out of the counts, even if later entries touched the same article
+function revertEntry(e){
+  const cur=zq(e.pid,e.zone);
+  if(cur===e.next)setZq(e.pid,e.zone,e.prev);
+  else if(e.mode==="add"&&cur!=null){const v=round(cur-e.qty);setZq(e.pid,e.zone,v<=0&&e.prev==null?null:v)}
+  L.log=L.log.filter(x=>x!==e);
 }
 function undo(){
-  const e=L.log.shift();if(!e){toast("No hay nada que deshacer");return}
-  setZq(e.pid,e.zone||NOZONE,e.prev);lastAct=null;save();renderAll();
-  toast("Deshecho: "+label(byId(e.pid)));feedback("Deshecho","Deshecho",2);
+  const e=L.log[0];if(!e){toast("No hay nada que deshacer");return}
+  revertEntry(e);lastAct=null;save();renderAll();
+  toast("Deshecho: "+label(byId(e.pid)));feedback("Deshecho","Deshecho",2,true);
+}
+function revertTag(tag){L.log.filter(x=>x.tag===tag).forEach(revertEntry);L.pending=L.pending.filter(x=>x.tag!==tag);lastAct=null;save();renderAll()}
+// move a voice entry to another article (and/or another quantity)
+function switchEntry(e,target,newQty){
+  const wasZone=L.zone;L.zone=e.zone===NOZONE?null:e.zone;
+  revertEntry(e);
+  // learn only words that didn't already point clearly at the first article ("kas" alone stays ambiguous)
+  if(target!==e.pid&&e.query){const q=toks(e.query),o=byId(e.pid);if(!o||!o._names||scoreQuery(q,o).s<.6)learn(byId(target),e.query)}
+  applyCount(target,newQty!=null?newQty:e.qty,e.mode,e.src,{alts:[e.pid].concat((e.alts||[]).filter(x=>x!==target&&x!==e.pid)),query:e.query,fixed:true});
+  L.zone=wasZone;save();renderAll(target);
+}
+function correctLast(hint){
+  const e=L.log.find(x=>x.src);
+  if(!e){toast("No hay nada que corregir");return}
+  const ht=toks(hint||"");
+  if(ht.length){
+    const r=parsePhrase(L.items,hint);
+    if(r&&!r.cmd&&r.qty!=null&&!r.query){switchEntry(e,e.pid,r.qty);return}
+    if(r&&!r.cmd&&r.query){
+      // "no, la pequeña" refines what was said before; "no, coca cola" names a new article
+      const strip=q=>q.split(" ").filter(t=>!/^(el|la|los|las|de|del|es|era)$/.test(t)).join(" ");
+      const both=parsePhrase(L.items,strip((e.query||"")+" "+r.query));
+      const pickFrom=list=>{let c=(list||[]).filter(x=>x.s>=.45);if(c[0]&&c[0].p.id===e.pid)c=c.slice(1);return c[0]||null};
+      const cb=both&&!both.cmd?pickFrom(both.cands):null, ch=pickFrom(r.cands);
+      const best=cb&&(!ch||cb.s>=ch.s-.05)?cb:ch;
+      if(best){switchEntry(e,best.p.id,r.qty);return}
+    }
+    feedback("No sé cuál es. Repítelo entero.","¿Cuál era? Repítelo entero",3,true);toast("No sé a cuál cambiarlo: repítelo entero");return;
+  }
+  const alt=(e.alts||[]).find(id=>id!==e.pid);
+  if(alt)switchEntry(e,alt,null);
+  else{feedback("Dime cuál era","Dime cuál era: «no, …»",3,true);toast("Di «no, …» con el artículo correcto")}
+}
+// best article for what was said, using context instead of asking
+function chooseSmart(r){
+  const c=r.cands||[];if(!c.length||c[0].s<.45)return null;
+  const top=c[0].s,z=curZone();
+  let pool=c.filter(x=>x.s>=top-.12&&x.s>=.45).slice(0,6);
+  const ctx=x=>{let b=x.s;const p=x.p;
+    if(r.qty!=null&&p.prev!=null&&p.prev>0){const d=Math.abs(p.prev-r.qty)/Math.max(p.prev,r.qty);if(d<.6)b+=.15*(1-d/.6)}
+    if(zq(p.id,z)==null)b+=.02;
+    return b};
+  pool=pool.map(x=>Object.assign({},x,{c:ctx(x)})).sort((a,b)=>b.c-a.c);
+  const pick=pool[0];
+  const dud=top<.72||(pool.length>1&&pool[0].c-pool[1].c<.08);
+  const alts=pool.slice(1).map(x=>x.p.id).concat(c.filter(x=>x.s>=.35&&!pool.some(y=>y.p.id===x.p.id)).map(x=>x.p.id)).slice(0,4);
+  return {pick:pick.p.id,dud,alts,score:top};
 }
 function learn(p,query){
   if(!p||!query)return;const q=toks(query).join(" ");if(!q)return;
@@ -774,7 +876,7 @@ function learn(p,query){
 }
 function setZone(zid,announce){
   L.zone=zid;save();renderZones();renderBoard();if(filter==="zone")renderList();
-  if(announce){toast("Contando en: "+zName(zid));feedback("Zona "+zName(zid),"Zona: "+zName(zid),2)}
+  if(announce){toast("Contando en: "+zName(zid));feedback("Zona "+zName(zid),"Zona: "+zName(zid),2,true)}
   $("pkZone").textContent=zName(curZone());
 }
 
@@ -787,25 +889,38 @@ function resolvePending(pd,pid,q){
 }
 function rejectFirst(pd){
   pd.opts.shift();
-  if(!pd.opts.length){L.pending=L.pending.filter(x=>x!==pd);save();renderPending();feedback("Vale. Repítelo con otras palabras.","Descartado",2);toast("Descartado: repítelo con otras palabras");return}
+  if(!pd.opts.length){L.pending=L.pending.filter(x=>x!==pd);save();renderPending();feedback("Vale. Repítelo con otras palabras.","Descartado",2,true);toast("Descartado: repítelo con otras palabras");return}
   pd.kind=pd.opts.length>1?"choose":"confirm";save();renderPending();askAloud(pd);
 }
 function askAloud(o){
   if(!locked||!o)return;
   const n=id=>spokenName(byId(id));
   let t;
+  if(!S.ask&&o.qty==null&&o.opts.length){feedback(`${n(o.opts[0])}, ¿cuántos?`,`${label(byId(o.opts[0]))}: ¿cantidad?`,3,true);return}
+  if(!S.ask&&o.kind==="unknown"){feedback(`No te he entendido`,`No entendido: «${o.raw}»`,3,true);return}
   if(o.kind==="confirm")t=`¿Es ${n(o.opts[0])}? Sí o no.`;
   else if(o.kind==="choose")t="¿Cuál? "+o.opts.map((id,k)=>`${["uno","dos","tres","cuatro"][k]}, ${n(id)}`).join(". ")+".";
   else t=`No lo he entendido: ${o.raw}.`;
   if(o.qty==null&&o.kind!=="unknown")t+=" Y dime la cantidad.";
-  feedback(t,t,3);
+  feedback(t,t,3,true);
 }
 
 /* ================= understanding what was said ================= */
-function handleText(text,fromVoice){
-  if(fromVoice&&Date.now()<muteUntil)return;
+let lastHeard={t:"",at:0};
+function handleText(text,fromVoice,tag){
+  if(fromVoice){
+    if(isEcho(text))return;
+    const nt=norm(text),now=Date.now();
+    if(nt===lastHeard.t&&now-lastHeard.at<1500)return;
+    lastHeard={t:nt,at:now};
+  }
   const parts=text.replace(/(\d)[.,](\d)/g,"$1§$2").split(/[;,.\n]+|\b(?:siguiente|luego|despues|después)\b/i).map(s=>s&&s.replace(/§/g,",").trim()).filter(Boolean);
+  // a correction can come split by a comma: "no, la veri pequeña"
+  for(let i=0;i<parts.length-1;i++){if(/^(no|no es|no era|ese no|esa no)$/i.test(norm(parts[i]))){parts.splice(i,2,parts[i]+" "+parts[i+1])}}
   for(const ph of parts){
+    const n=norm(ph);
+    const cm=n.match(/^(?:no|no es|no era|ese no|esa no|el otro|la otra|otro|otra|error|cambialo|cambiala)(?:\s+(?:es|era|eran|son|el|la|los|las))*\s*(.*)$/);
+    if(cm&&!(S.ask&&L.pending.length)){correctLast(cm[1]);continue}
     const c=parseCommand(L.items,L.zones,ph);
     if(c){
       if(c.cmd==="zone"){setZone(c.zone,true);continue}
@@ -815,18 +930,41 @@ function handleText(text,fromVoice){
       if(c.cmd==="askall"){showSummary("__all",true);continue}
       if(c.cmd==="askprod"){answerProd(c.prod?[c.prod]:c.opts,c.zone);continue}
     }
-    const r=parsePhrase(L.items,ph);if(!r)continue;
-    const first=L.pending[0];
-    if(r.cmd==="undo"){undo();continue}
-    if(r.cmd==="yes"){if(first&&first.opts.length)resolvePending(first,first.opts[0]);else toast("No hay nada que confirmar");continue}
-    if(r.cmd==="no"){if(first)rejectFirst(first);continue}
-    if(r.cmd==="pick"){if(first&&first.opts[r.n-1])resolvePending(first,first.opts[r.n-1]);continue}
-    if(first&&first.qty==null&&r.qty!=null&&!r.query){first.qty=r.qty;save();renderPending();if(first.kind==="confirm"&&locked)askAloud(first);continue}
-    if(first&&first.qty!=null&&r.qty!=null&&!r.query&&Number.isInteger(r.qty)&&r.qty>=1&&r.qty<=first.opts.length){resolvePending(first,first.opts[r.qty-1]);continue}
-    const d=decide(r.cands);
-    if(d.kind==="auto"&&r.qty!=null){applyCount(d.opts[0].p.id,r.qty,r.mode,ph);continue}
-    addPending({raw:ph,qty:r.qty,query:r.query,mode:r.mode,kind:d.kind==="auto"?"confirm":d.kind,opts:d.opts.map(x=>x.p.id)});
+    for(const r of parseMulti(L.items,ph)){
+      const first=L.pending[0];
+      if(r.cmd==="undo"){undo();continue}
+      if(r.cmd==="yes"){
+        if(first&&first.opts.length&&(S.ask||first.qty!=null))resolvePending(first,first.opts[0]);
+        else if(L.log[0]&&L.log[0].dud){L.log[0].dud=false;save();renderAll();feedback("Vale","Confirmado",1,true)}
+        continue}
+      if(r.cmd==="no"){if(first&&S.ask)rejectFirst(first);else correctLast("");continue}
+      if(r.cmd==="pick"){if(first&&first.opts[r.n-1])resolvePending(first,first.opts[r.n-1]);continue}
+      // a bare number after "¿cuántos?" fills the quantity
+      if(first&&first.qty==null&&r.qty!=null&&!r.query){if(first.opts.length&&(!S.ask||first.kind==="confirm"&&!first.asked)){const pd=first;L.pending=L.pending.filter(x=>x!==pd);
+          // now that the quantity is known, pick again with it (it helps tell variants apart)
+          const r2=parsePhrase(L.items,pd.raw+" "+String(r.qty));const ch=!S.ask&&r2&&!r2.cmd?chooseSmart(r2):null;
+          if(ch)applyCount(ch.pick,r.qty,pd.mode,pd.raw+" "+fmt(r.qty),{alts:ch.alts,query:pd.query,dud:ch.dud,tag});
+          else applyCount(pd.opts[0],r.qty,pd.mode,pd.raw+" "+fmt(r.qty),{alts:pd.opts.slice(1),query:pd.query,tag})}else{first.qty=r.qty;save();renderPending()}continue}
+      if(S.ask){
+        if(first&&first.qty!=null&&r.qty!=null&&!r.query&&Number.isInteger(r.qty)&&r.qty>=1&&r.qty<=first.opts.length){resolvePending(first,first.opts[r.qty-1]);continue}
+        const d=decide(r.cands);
+        if(d.kind==="auto"&&r.qty!=null){applyCount(d.opts[0].p.id,r.qty,r.mode,ph,{query:r.query,tag});continue}
+        addPending({raw:ph,qty:r.qty,query:r.query,mode:r.mode,kind:d.kind==="auto"?"confirm":d.kind,opts:d.opts.map(x=>x.p.id),tag});
+        continue;
+      }
+      // fast mode: never stop to ask, take the best guess and let the user correct it
+      const ch=chooseSmart(r);
+      if(!ch){addPending({raw:ph,qty:r.qty,query:r.query,mode:r.mode,kind:"unknown",opts:(r.cands||[]).filter(x=>x.s>.3).slice(0,3).map(x=>x.p.id),tag});continue}
+      if(r.qty==null){addPending({raw:ph,qty:null,query:r.query,mode:r.mode,kind:"confirm",opts:[ch.pick].concat(ch.alts),tag});continue}
+      applyCount(ch.pick,r.qty,r.mode,ph,{alts:ch.alts,query:r.query,dud:ch.dud,tag});
+    }
   }
+}
+// commit early only when there is no doubt at all
+function confident(text){
+  const parts=text.split(/[;,.]+/).filter(s=>s.trim());if(!parts.length)return false;
+  return parts.every(ph=>{const n=norm(ph);if(/^(no|si|vale|el otro|la otra|otro|otra|error|deshacer)\b/.test(n))return false;if(parseCommand(L.items,L.zones,ph))return false;
+    const items=parseMulti(L.items,ph);return items.length&&items.every(r=>!r.cmd&&r.qty!=null&&r.query&&(()=>{const ch=chooseSmart(r);return ch&&!ch.dud&&ch.score>=.85})())});
 }
 
 /* ================= rendering ================= */
@@ -852,7 +990,9 @@ function renderZones(){
 function renderLast(){
   if(!lastAct){$("lastBox").innerHTML=L.log.length?"":`<div class="last empty"><div class="t"><b>Elige la zona y empieza a contar</b><small>Toca una zona arriba o di «voy a contar la cámara positiva».</small></div></div>`;return}
   const a=lastAct,p=byId(a.pid);if(!p){$("lastBox").innerHTML="";return}
-  $("lastBox").innerHTML=`<div class="last"><div class="t"><b>${esc(label(p))}</b><small>${esc(zName(a.z))}${a.m==="add"&&a.prev!=null?`: ${fmt(a.prev)} + ${fmt(a.qty)}`:""}${a.multi?` · total ${fmt(a.tot)}`:""}</small></div><div class="n">${fmt(a.next)}</div><button class="btn sm" data-undo>Deshacer</button></div>`;
+  const alts=(a.e&&a.e.alts||[]).filter(id=>byId(id)).slice(0,3);
+  const altHtml=alts.length?`<div class="alts"><span>${a.e.dud?"¿Seguro? Cambiar por:":"¿No era? Cambiar por:"}</span>${alts.map(id=>`<button class="altc" data-sw="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div>`:"";
+  $("lastBox").innerHTML=`<div class="last${a.e&&a.e.dud?" dud":""}"><div class="t"><b>${esc(label(p))}</b><small>${esc(zName(a.z))}${a.m==="add"&&a.prev!=null?`: ${fmt(a.prev)} + ${fmt(a.qty)}`:""}${a.multi?` · total ${fmt(a.tot)}`:""}</small></div><div class="n">${fmt(a.next)}</div><button class="btn sm" data-undo>Deshacer</button></div>${altHtml}`;
 }
 function renderPending(){
   renderBoard();
@@ -888,7 +1028,15 @@ function renderList(flash){
   }).join(""):`<div class="empty">${filter==="zone"?"Todavía no hay nada contado en esta zona.":filter==="done"?"Todavía no has contado nada.":"No hay artículos que coincidan."}</div>`;
   if(flash&&view==="lista"){const el=$("list").querySelector(`[data-id="${CSS.escape(flash)}"]`);if(el){el.classList.add("flash")}}
 }
+function renderReview(){
+  const ds=L.log.filter(e=>e.dud&&byId(e.pid));
+  $("revPanel").hidden=!ds.length;$("revN").textContent=ds.length||"";
+  $("revBadge").hidden=!ds.length;$("revBadge").textContent=ds.length;
+  $("revList").innerHTML=ds.map(e=>`<div class="rev" data-t="${e.t}"><div class="rt"><b>${esc(byId(e.pid).name)}</b><small>${esc(zName(e.zone))} · ${fmt(e.qty)} · has dicho «${esc(e.src)}»</small></div>
+    <div class="links"><button class="btn sm ok" data-okr>✓ Bien</button>${(e.alts||[]).filter(id=>byId(id)).slice(0,3).map(id=>`<button class="altc" data-swr="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div></div>`).join("");
+}
 function renderLog(){
+  renderReview();
   $("log").innerHTML=L.log.slice(0,60).map(e=>{const p=byId(e.pid);const t=new Date(e.t).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"});
     return `<div><span>${t} · ${esc(zName(e.zone||NOZONE))}<br><b>${esc(p?p.name:e.pid)}</b>${e.src?`<br><small class="hint">«${esc(e.src)}»</small>`:""}</span><span class="v">${e.next==null?"–":fmt(e.next)}</span></div>`}).join("")||`<div class="hint">Aquí verás cada cantidad que apuntes.</div>`;
 }
@@ -953,15 +1101,20 @@ $("cfmNo").onclick=()=>closeS("cfmSheet");
 $("kbBtn").onclick=()=>{const f=$("form");f.hidden=!f.hidden;if(!f.hidden)$("txt").focus()};
 $("form").addEventListener("submit",e=>{e.preventDefault();const v=$("txt").value.trim();if(v){handleText(v);$("txt").value=""}});
 $("mode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.mode=b.dataset.m;save();[...$("mode").children].forEach(x=>x.classList.toggle("act",x===b))});
+$("askSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.ask=b.dataset.a==="1";save();[...$("askSeg").children].forEach(x=>x.classList.toggle("act",x===b))});
+$("fbSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.fb=b.dataset.f;save();[...$("fbSeg").children].forEach(x=>x.classList.toggle("act",x===b))});
 $("filter").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;filter=b.dataset.f;[...$("filter").children].forEach(x=>x.classList.toggle("act",x===b));renderList()});
 $("search").addEventListener("input",()=>renderList());
 $("undoBtn").onclick=undo;
-$("lastBox").addEventListener("click",e=>{if(e.target.closest("[data-undo]"))undo()});
+$("lastBox").addEventListener("click",e=>{if(e.target.closest("[data-undo]"))return undo();const s=e.target.closest("[data-sw]");if(s&&lastAct&&lastAct.e&&L.log.includes(lastAct.e))switchEntry(lastAct.e,s.dataset.sw,null)});
 $("resp").addEventListener("input",e=>{S.resp=e.target.value;save()});
 $("company").addEventListener("input",e=>{S.company=e.target.value;save();renderBoard()});
 $("zones").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.hasAttribute("data-zedit"))return editZones();setZone(b.dataset.z,false)});
 $("sumZones").addEventListener("click",e=>{const b=e.target.closest("[data-z]");if(b)showSummary(b.dataset.z,false)});
 $("sumSpeak").onclick=()=>say(lastAnswer);
+$("revList").addEventListener("click",ev=>{const row=ev.target.closest(".rev");if(!row)return;const e=L.log.find(x=>String(x.t)===row.dataset.t);if(!e)return;
+  if(ev.target.closest("[data-okr]")){e.dud=false;save();renderAll();return}
+  const b=ev.target.closest("[data-swr]");if(b)switchEntry(e,b.dataset.swr,null)});
 $("list").addEventListener("click",e=>{
   const it=e.target.closest(".item");if(!it)return;const id=it.dataset.id;
   const b=e.target.closest("button[data-a]");
@@ -1127,18 +1280,31 @@ $("pcClose").onclick=()=>closeS("pcSheet");
 $("resetBtn").onclick=()=>confirmBox("¿Empezar un recuento nuevo?",`Se borran las cantidades, el historial y lo pendiente de ${L.name}. La lista de artículos, las zonas y lo aprendido se mantienen.`,()=>{L.counts={};L.log=[];L.pending=[];L.typed={};L.zone=null;lastAct=null;save();renderAll();go("contar");toast("Recuento vacío")});
 
 /* ================= microphone ================= */
-let dict=null,listening=false,locked=false,muteUntil=0,wakeLock=null,wsRec=null,wsActive=false;
+let dict=null,listening=false,locked=false,wakeLock=null,wsRec=null,wsActive=false;
 const mic=$("mic"),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 function setMic(on){listening=on;mic.classList.toggle("on",on);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando…":"Pulsa y di: «leche doce»";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
 function noMic(){$("micState").innerHTML="El micrófono no está disponible aquí";$("live").innerHTML="Usa <b>Escribir</b> y el micro del teclado, o abre la app en Chrome (Android) o en tu enlace de Safari (iPhone).";$("lockBtn").disabled=true;$("lockBtn").style.opacity=.5;$("form").hidden=false}
-function onHeard(t){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(t)handleText(t,true)}
+function onHeard(t,tag){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(t)handleText(t,true,tag)}
+let wsDone=new Set(),wsEarly={},wsTimer=null,wsSession=0;
 function onPartialText(t){$("live").textContent=t?("… "+t):"";$("pkLive").textContent=t||""}
 function startWS(){
   if(!SR)return Promise.reject({code:"unavailable"});
   return new Promise((res,rej)=>{try{
     wsRec=new SR();wsRec.lang="es-ES";wsRec.continuous=true;wsRec.interimResults=true;let started=false;
-    wsRec.onstart=()=>{started=true;wsActive=true;setMic(true);res()};
-    wsRec.onresult=e=>{let im="";for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)onHeard(r[0].transcript);else im+=r[0].transcript}onPartialText(im)};
+    wsRec.onstart=()=>{started=true;wsActive=true;wsDone=new Set();wsEarly={};wsSession++;setMic(true);res()};
+    wsRec.onresult=e=>{
+      // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
+      let im="",lastIdx=-1;
+      for(let i=0;i<e.results.length;i++){const r=e.results[i];
+        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);const t=r[0].transcript,tag="s"+wsSession+"_"+i,ea=wsEarly[i];
+          if(ea){if(norm(ea.text)!==norm(t)){revertTag(ea.tag);onHeard(t,tag+"f")}}else onHeard(t,tag)}}
+        else{im+=r[0].transcript;lastIdx=i}}
+      onPartialText(im);
+      clearTimeout(wsTimer);
+      if(lastIdx>=0&&!wsEarly[lastIdx]){const idx=lastIdx,txt=e.results[idx][0].transcript;
+        // speaker paused 0.6 s and the phrase is unambiguous: count it now instead of waiting for Safari
+        wsTimer=setTimeout(()=>{if(wsDone.has(idx)||wsEarly[idx])return;if(confident(txt)){const tag="s"+wsSession+"_"+idx;wsEarly[idx]={text:txt,tag};onHeard(txt,tag)}},600)}
+    };
     wsRec.onerror=e=>{if(!started)rej({code:/not-allowed|service-not-allowed/.test(e.error)?"not_granted":"upstream_error"});else if(e.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}};
     wsRec.onend=()=>{wsActive=false;setMic(false);if(locked&&wsRec)setTimeout(()=>{try{wsRec.start()}catch(e){}},250)};
     wsRec.start();
@@ -1168,10 +1334,15 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
   ["pointerup","pointerleave","pointercancel"].forEach(ev=>el.addEventListener(ev,()=>{clearTimeout(t);el.classList.remove("hold")}));
   $("pocket").addEventListener("contextmenu",e=>e.preventDefault());})();
 function vib(n){try{navigator.vibrate&&navigator.vibrate(n===1?80:n===2?[60,60,60]:[120,80,120,80,120])}catch(e){}}
+let spoken={w:new Set(),until:0};
 function speakLocal(text){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();
   text=text.replace(/\boz\b/gi,"onzas").replace(/\bcl\b/gi,"centilitros");
-  const u=new SpeechSynthesisUtterance(text);u.lang="es-ES";u.rate=1.1;muteUntil=Date.now()+Math.min(9000,1200+text.length*75);u.onend=()=>{muteUntil=Date.now()+450};speechSynthesis.speak(u)}catch(e){}}
-function feedback(spoken,shown,kind){if(!locked)return;vib(kind);$("pkLast").textContent=shown;if(S.voiceFb!==false)speakLocal(spoken)}
+  spoken={w:new Set(norm(text).split(" ").filter(Boolean)),until:Date.now()+1500+text.length*80};
+  const u=new SpeechSynthesisUtterance(text);u.lang="es-ES";u.rate=1.15;u.onend=()=>{spoken.until=Date.now()+700};speechSynthesis.speak(u)}catch(e){}}
+// drop what the mic picked up of our own voice, keep everything else
+function isEcho(t){if(Date.now()>spoken.until)return false;const w=norm(t).split(" ").filter(Boolean);if(!w.length)return true;const hit=w.filter(x=>spoken.w.has(x)).length;return hit/w.length>=.6}
+function feedback(say,shown,kind,important){if(!locked)return;vib(kind);$("pkLast").textContent=shown;
+  if(S.voiceFb===false)return;if(S.fb==="doubt"&&!important)return;speakLocal(say)}
 (async()=>{
   try{
     if(window.claude&&window.claude.use){
@@ -1187,6 +1358,8 @@ function feedback(spoken,shown,kind){if(!locked)return;vib(kind);$("pkLast").tex
 load();
 $("resp").value=S.resp||"";
 [...$("mode").children].forEach(x=>x.classList.toggle("act",x.dataset.m===S.mode));
+[...$("askSeg").children].forEach(x=>x.classList.toggle("act",(x.dataset.a==="1")===!!S.ask));
+[...$("fbSeg").children].forEach(x=>x.classList.toggle("act",x.dataset.f===(S.fb||"all")));
 renderAll();
 })();
 </script>
