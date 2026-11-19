@@ -3,403 +3,378 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1C2633">
-<title>Recuento · Inventario por voz</title>
+<meta name="theme-color" content="#0A3D7A">
+<title>Conteo · Inventario por voz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#EEF1F4; --surface:#FFFFFF; --ink:#1B2430; --muted:#5E6B7A; --line:#DCE2E8;
-  --board:#1C2633; --board2:#263243; --amber:#F2A900; --amber-ink:#2A1F00;
-  --ok:#2E8B57; --ok-soft:#E3F2EA; --warn:#B7791F; --warn-soft:#FDF3DC; --bad:#C8402F; --bad-soft:#FBE7E4;
-  --r:12px; --tab:64px;
-  --cond:'Barlow Condensed','Barlow',system-ui,sans-serif;
+  --blue:#0A3D7A; --blue-hi:#124C92; --blue-lo:#072C59; --on:#FFFFFF; --on-2:rgba(255,255,255,.72); --on-3:rgba(255,255,255,.14);
+  --ink:#0E1C2E; --muted:#5D6B7D; --line:#E2E7EE; --bg:#F3F6FA; --surface:#FFFFFF;
+  --ok:#1F8A5B; --warn:#C27C0E; --warn-soft:#FDF4E3; --bad:#C63A2E; --bad-soft:#FCEBE9; --accent:#FFC94D;
+  --r:14px; --nav:68px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 Barlow,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;font:16px/1.4 Figtree,system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{background:var(--blue);color:var(--on);min-height:100vh}
 button{font:inherit;color:inherit}
-:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+[hidden]{display:none!important}
 
-/* ---------- board header ---------- */
-.board{background:var(--board);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:15}
-.brandRow{display:flex;align-items:center;gap:10px;max-width:720px;margin:0 auto}
-.logo{width:34px;height:34px;border-radius:8px;background:var(--amber);display:grid;place-items:center;flex:none}
-.brand{line-height:1.05}
-.brand b{font-family:var(--cond);font-size:22px;font-weight:700;letter-spacing:.01em}
-.brand small{display:block;color:#9FB0C3;font-size:12px}
-.localBtn{margin-left:auto;background:var(--board2);border:1px solid #344257;color:#fff;border-radius:10px;padding:7px 10px 7px 12px;text-align:right;cursor:pointer;max-width:55%;display:flex;align-items:center;gap:8px}
-.localBtn span{display:block;min-width:0}
-.localBtn b{display:block;font-family:var(--cond);font-size:17px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.localBtn small{display:block;color:#9FB0C3;font-size:11px}
-.flights{max-width:720px;margin:12px auto 0;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
-.zoneNow small{color:#9FB0C3;font-size:12px;display:block}
-.zoneNow b{font-family:var(--cond);font-size:26px;font-weight:600;color:var(--amber);line-height:1.1}
-.flap{display:flex;gap:3px}
-.flap i{font-style:normal;font-family:var(--cond);font-weight:700;font-size:26px;line-height:1;width:22px;height:34px;display:grid;place-items:center;background:#0F1620;color:var(--amber);border-radius:4px;position:relative}
-.flap i::after{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:#000;opacity:.6}
-.flap i.sep{width:12px;background:none;color:#9FB0C3}
-.flap i.sep::after{display:none}
-.flap i.flip{animation:flip .35s ease-out}
-@keyframes flip{0%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
-.prog{grid-column:1/-1;height:4px;background:#334155;border-radius:4px;overflow:hidden}
-.prog div{height:100%;background:var(--amber);width:0;transition:width .4s}
+/* ---------- main screen ---------- */
+.app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding:calc(14px + env(safe-area-inset-top)) 20px calc(var(--nav) + 18px + env(safe-area-inset-bottom))}
+.top{display:flex;align-items:center;gap:12px}
+.mark{display:flex;align-items:center;gap:10px;min-width:0}
+.mark img{height:34px;max-width:120px;object-fit:contain;background:#fff;border-radius:8px;padding:3px 6px}
+.word b{display:block;font-size:26px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.word small{display:block;color:var(--on-2);font-size:12px;margin-top:3px}
+.word small.net{color:var(--accent)}
+.top .sp{flex:1}
+.pill{border:1px solid var(--on-3);background:rgba(255,255,255,.08);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600;cursor:pointer;max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon{width:40px;height:40px;border-radius:50%;border:1px solid var(--on-3);background:rgba(255,255,255,.08);display:grid;place-items:center;cursor:pointer;flex:none}
+.icon svg{width:20px;height:20px}
 
-/* ---------- views ---------- */
-main{max-width:720px;margin:0 auto;padding:14px 14px calc(var(--tab) + 24px + env(safe-area-inset-bottom))}
-.view{display:none}.view.on{display:block}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin-bottom:12px}
-.panel h2{font-family:var(--cond);font-size:20px;font-weight:600;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.hint{color:var(--muted);font-size:14px}
+.where{margin-top:34px;text-align:center}
+.zoneBtn{border:0;background:none;cursor:pointer;font-size:28px;font-weight:700;letter-spacing:-.02em;display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:10px}
+.zoneBtn svg{width:20px;height:20px;opacity:.7}
+.prog{margin:10px auto 0;max-width:260px}
+.prog .t{font-size:14px;color:var(--on-2)}
+.prog .t b{color:var(--on)}
+.bar{height:4px;background:var(--on-3);border-radius:4px;margin-top:6px;overflow:hidden}
+.bar div{height:100%;background:var(--on);width:0;transition:width .4s}
+#flap{display:none}
 
-.zones{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;margin:0 -2px;scrollbar-width:none}
-.zones::-webkit-scrollbar{display:none}
-.zchip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 13px;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted)}
-.zchip.cur{background:var(--board);border-color:var(--board);color:var(--amber)}
-.zchip.add{border-style:dashed}
+.recWrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:26px 0 18px;min-height:280px}
+#mic{width:168px;height:168px;border-radius:50%;border:0;background:var(--on);color:var(--blue);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 12px rgba(255,255,255,.08),0 18px 40px rgba(4,20,45,.35);transition:transform .15s}
+#mic:active{transform:scale(.97)}
+#mic svg{width:58px;height:58px}
+#mic.on{background:var(--bad);color:#fff;animation:ring 1.6s infinite}
+@keyframes ring{0%{box-shadow:0 0 0 0 rgba(255,255,255,.35),0 18px 40px rgba(4,20,45,.35)}70%{box-shadow:0 0 0 30px rgba(255,255,255,0),0 18px 40px rgba(4,20,45,.35)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 18px 40px rgba(4,20,45,.35)}}
+#micState{font-size:17px;font-weight:600}
+#live{min-height:22px;color:var(--on-2);font-style:italic;text-align:center;max-width:320px}
+.subActs{display:flex;gap:10px}
+.ghostBtn{border:1px solid var(--on-3);background:transparent;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;gap:7px;align-items:center;color:var(--on)}
+.ghostBtn svg{width:16px;height:16px}
+form.type{display:flex;gap:8px;width:100%}
+form.type input{flex:1}
 
-.micWrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0 6px}
-#mic{width:112px;height:112px;border-radius:50%;border:0;background:var(--board);color:var(--amber);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 6px #fff,0 0 0 7px var(--line)}
-#mic svg{width:44px;height:44px}
-#mic.on{background:var(--amber);color:var(--board);animation:ring 1.5s infinite}
-@keyframes ring{0%{box-shadow:0 0 0 6px #fff,0 0 0 7px var(--amber)}70%{box-shadow:0 0 0 6px #fff,0 0 0 26px rgba(242,169,0,0)}100%{box-shadow:0 0 0 6px #fff,0 0 0 7px var(--line)}}
-#micState{font-weight:600}
-#live{min-height:22px;color:var(--muted);font-style:italic;text-align:center}
-.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:12px 14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
-.btn.dark{background:var(--board);color:#fff;border-color:var(--board)}
-.btn.amber{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
-.btn.ok{background:var(--ok);color:#fff;border-color:var(--ok)}
-.btn.ghost{background:transparent}
-.btn.sm{min-height:36px;padding:7px 11px;font-size:14px}
-.btn.full{width:100%}
-.btn svg{width:18px;height:18px;flex:none}
-form.type{display:flex;gap:8px;margin-top:10px}
-input,textarea,select{font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 12px;width:100%;min-width:0}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--board)}
-.modeRow{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:14px;color:var(--muted)}
-.seg{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px}
-.seg button{border:0;background:none;padding:7px 12px;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
-.seg button.act{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(27,36,48,.15)}
-
-/* last count */
-.last{display:flex;align-items:center;gap:12px;border-left:4px solid var(--ok);background:var(--surface);border-radius:var(--r);padding:12px 12px 12px 14px;margin-bottom:12px;border-top:1px solid var(--line);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+/* cards on blue */
+.feed{display:flex;flex-direction:column;gap:10px}
+.last{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.1);border:1px solid var(--on-3);border-radius:var(--r);padding:12px 14px}
 .last .t{flex:1;min-width:0}
-.last .t b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.last .t small{color:var(--muted)}
-.last .n{font-family:var(--cond);font-size:34px;font-weight:700;line-height:1}
-.last.empty{border-left-color:var(--line)}
-
-/* pending */
-.pend{border-radius:var(--r);padding:14px;margin-bottom:10px;background:var(--warn-soft);border:1px solid #F1DDA8}
-.pend.unknown{background:var(--bad-soft);border-color:#F3C5BE}
+.last .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:16px}
+.last .t small{color:var(--on-2)}
+.last .n{font-size:32px;font-weight:800;letter-spacing:-.02em}
+.last.dud{border-color:var(--accent)}
+.last.empty{display:none}
+.last .btn{background:transparent;color:var(--on);border-color:var(--on-3)}
+.alts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--on-2)}
+.altc{border:1px solid var(--on-3);background:rgba(255,255,255,.08);color:var(--on);border-radius:999px;padding:6px 11px;font-size:14px;font-weight:600;cursor:pointer}
+#heldBox{background:var(--on);color:var(--blue);border-radius:var(--r);padding:12px 14px;font-weight:700}
+.pend{background:var(--surface);color:var(--ink);border-radius:var(--r);padding:14px}
+.pend.unknown{border-left:4px solid var(--bad)}
+.pend.wait{border-left:4px solid var(--blue-hi)}
+.pend.wait.stale{border-left-color:var(--warn)}
 .pend .said{font-size:13px;color:var(--muted)}
-.pend .q{font-family:var(--cond);font-size:22px;font-weight:600;line-height:1.15;margin:4px 0 10px}
-.pend .q small{display:block;font-family:Barlow,sans-serif;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px}
+.pend .q{font-size:20px;font-weight:700;line-height:1.2;margin:4px 0 10px;letter-spacing:-.01em}
+.pend .q small{display:block;font-size:13px;font-weight:500;color:var(--muted);margin-top:2px}
+.pend .altc,.sheet .altc{border-color:var(--line);background:var(--surface);color:var(--ink)}
+.pend .alts,.sheet .alts{color:var(--muted)}
 .yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .opts{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
-.opt{display:flex;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:500}
-.opt .k{font-family:var(--cond);font-weight:700;font-size:18px;width:26px;height:26px;border-radius:6px;background:var(--board);color:var(--amber);display:grid;place-items:center;flex:none}
-.links{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:flex;gap:10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:500;color:var(--ink)}
+.opt .k{font-weight:800;width:26px;height:26px;border-radius:7px;background:var(--blue);color:#fff;display:grid;place-items:center;flex:none;font-size:14px}
+.links{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .lnk{border:0;background:none;color:var(--muted);text-decoration:underline;font-size:14px;padding:4px 2px;cursor:pointer}
-select.lnk{width:auto;text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:5px 8px;border-radius:8px}
+select.lnk{width:auto;text-decoration:none;border:1px solid var(--line);background:var(--surface);padding:5px 8px;border-radius:8px;color:var(--ink)}
+.credit{text-align:center;color:var(--on-2);font-size:12px;margin-top:18px}
 
-.alts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 12px;font-size:13px;color:var(--muted)}
-.altc{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 11px;font-size:14px;font-weight:600;cursor:pointer}
-.last.dud{border-left-color:var(--warn)}
+/* bottom nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--blue-lo);border-top:1px solid var(--on-3);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:20}
+.nav button{border:0;background:none;height:var(--nav);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;font-weight:600;color:var(--on-2);cursor:pointer;position:relative}
+.nav button svg{width:22px;height:22px}
+.nav button:active{color:var(--on)}
+.badge{position:absolute;top:9px;left:calc(50% + 6px);background:var(--accent);color:var(--blue-lo);font-size:11px;font-weight:800;border-radius:9px;padding:0 5px;min-width:17px;line-height:17px}
+
+/* ---------- white sheets ---------- */
+.sheetBg{position:fixed;inset:0;background:rgba(4,20,45,.55);display:none;align-items:flex-end;justify-content:center;z-index:40}
+.sheetBg.open{display:flex}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet.tall{height:92vh}
+.sheet h3{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0 0 4px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sheet h4{font-size:15px;margin:18px 0 6px}
+.sheet p,.hint{color:var(--muted);font-size:14px;margin:0 0 12px}
+.x{width:36px;height:36px;border-radius:50%;border:0;background:var(--bg);font-size:20px;cursor:pointer;flex:none;color:var(--ink)}
+.acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.btn.sm{min-height:36px;padding:7px 12px;font-size:14px}
+.btn.full{width:100%}
+.btn svg{width:18px;height:18px}
+.btn.delbtn{color:var(--bad);border-color:#F1C4BF}
+.btn.delbtn.solid{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%;min-width:0}
+input:focus,textarea:focus{outline:none;border-color:var(--blue)}
+.app form.type input{background:rgba(255,255,255,.95)}
+.app form.type .btn.pri{background:#fff;color:var(--blue);border-color:#fff}
+.pend .actions{grid-template-columns:1fr auto}
+.sheet textarea{min-height:240px;font-size:13px;white-space:pre;overflow:auto}
+.field{display:block;margin-bottom:12px}
+.field span{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+.seg{display:inline-flex;background:var(--bg);border-radius:10px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 12px;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted);cursor:pointer}
+.seg button.act{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(14,28,46,.15)}
+.setRow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--line);font-size:15px}
+.setRow:first-of-type{border-top:0}
+
+.zones{display:flex;flex-wrap:wrap;gap:8px}
+.zchip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:10px 15px;font-size:15px;font-weight:600;cursor:pointer;color:var(--ink)}
+.zchip.cur{background:var(--blue);border-color:var(--blue);color:#fff}
+.zchip.add{border-style:dashed;color:var(--muted)}
+
+.tools{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;position:sticky;top:-20px;background:var(--surface);padding:6px 0 8px;z-index:2}
+.item{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.pos{color:var(--muted);font-size:13px;text-align:right}
+.nm{min-width:0;cursor:pointer}
+.nm b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:600;font-size:15px;line-height:1.25}
+.nm small{color:var(--muted);font-size:13px}
+.zb{font-size:13px;margin-top:2px}
+.zb span{margin-right:8px;white-space:nowrap}
+.zb .here{color:var(--blue);font-weight:700}
+.qty{display:flex;align-items:center;gap:4px}
+.qty button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:19px;line-height:1;cursor:pointer;color:var(--ink)}
+.tot{font-size:22px;font-weight:800;min-width:46px;text-align:center;letter-spacing:-.02em}
+.tot.none{color:#B9C3CF;font-weight:500}
+.diff{font-size:12px;font-weight:700}
+.diff.up{color:var(--ok)}.diff.down{color:var(--bad)}
+.item.flash{animation:fl 1.2s}
+@keyframes fl{0%{background:#E6EEF8}100%{background:transparent}}
+.empty{color:var(--muted);text-align:center;padding:18px 0}
+.rows div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.rows div:first-child{border-top:0}
+.rows .v{font-size:19px;font-weight:800;white-space:nowrap}
+.rows .sub{padding-left:14px;color:var(--muted);font-size:14px}
+.rows .sub .v{font-size:16px;font-weight:600}
 .rev{padding:10px 0;border-top:1px solid var(--line)}
 .rev .rt b{display:block}.rev .rt small{color:var(--muted)}
 .rev .links{margin-top:6px;gap:6px}
-.panel.danger{border-color:#F3C5BE}
-.btn.delbtn{color:var(--bad);border-color:#F3C5BE}
-.btn.delbtn.solid{background:var(--bad);color:#fff;border-color:var(--bad)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.aliases{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
-.aliases span{background:var(--bg);border-radius:999px;padding:5px 6px 5px 11px;font-size:14px;display:inline-flex;align-items:center;gap:4px}
-.aliases button{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
-.teach{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
-.pend.wait{background:#EEF4FB;border-color:#C9DAEE}
-.pend.wait.stale{background:var(--warn-soft);border-color:#F1DDA8}
-#heldBox{background:var(--board);color:var(--amber);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;font-family:var(--cond);font-size:20px;font-weight:600}
-.brand small.net{color:var(--amber)}
-/* list */
-.tools{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
-.item{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
-.item:first-child{border-top:0}
-.pos{font-family:var(--cond);color:var(--muted);font-size:15px;text-align:right}
-.nm{min-width:0;cursor:pointer}
-.nm b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-weight:600;font-size:15px;line-height:1.25;overflow:hidden;word-break:break-word}
-.nm small{color:var(--muted);font-size:13px}
-.zb{font-size:13px;color:var(--ink);margin-top:2px}
-.zb span{margin-right:8px;white-space:nowrap}
-.zb .here{color:var(--warn);font-weight:600}
-.qty{display:flex;align-items:center;gap:6px}
-.qty{gap:4px}.qty button{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:20px;line-height:1;cursor:pointer}
-.tot{font-family:var(--cond);font-size:24px;font-weight:700;min-width:44px;text-align:center}
-.tot.none{color:#B7C0CB;font-weight:500}
-.diff{font-size:12px;font-weight:600}
-.diff.up{color:var(--ok)}.diff.down{color:var(--bad)}
-.item.flash{animation:fl 1.2s}
-@keyframes fl{0%{background:#FFF4CC}100%{background:transparent}}
-.empty{color:var(--muted);text-align:center;padding:18px 0}
-
-/* summary rows */
-.rows div{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
-.rows div:first-child{border-top:0}
-.rows .v{font-family:var(--cond);font-size:20px;font-weight:700;white-space:nowrap}
-.rows .sub{padding-left:14px;color:var(--muted);font-size:14px}
-.rows .sub .v{font-size:16px;font-weight:600}
-
-/* export / pc */
-.exp{display:flex;gap:12px;align-items:flex-start}
-.exp .ic{width:40px;height:40px;border-radius:10px;background:var(--bg);display:grid;place-items:center;flex:none}
-.exp .ic svg{width:22px;height:22px}
-.exp p{margin:2px 0 10px;color:var(--muted);font-size:14px}
+.revBox{background:var(--warn-soft);border-radius:12px;padding:12px;margin-bottom:12px}
+.expRow{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line);cursor:pointer;text-align:left;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;color:var(--ink)}
+.expRow:first-of-type{border-top:0}
+.expRow .ic{width:42px;height:42px;border-radius:12px;background:var(--bg);display:grid;place-items:center;flex:none;color:var(--blue)}
+.expRow .ic svg{width:22px;height:22px}
+.expRow b{display:block}.expRow small{color:var(--muted)}
 .pc{width:100%;border-collapse:collapse}
-.pc td{padding:10px 6px;border-top:1px solid var(--line);vertical-align:middle}
-.pc td.c{font-family:var(--cond);font-size:17px;color:var(--muted);white-space:nowrap}
-.pc td.q{font-family:var(--cond);font-size:26px;font-weight:700;text-align:right;white-space:nowrap}
-.pc tr.done td{opacity:.35}
+.pc td{padding:11px 6px;border-top:1px solid var(--line);vertical-align:middle}
+.pc td.c{font-size:15px;color:var(--muted);white-space:nowrap}
+.pc td.q{font-size:24px;font-weight:800;text-align:right;white-space:nowrap}
+.pc tr.done td{opacity:.3}
 .pc tr{cursor:pointer}
 .pc td.d{font-size:14px}
-
-/* tab bar */
-.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:env(safe-area-inset-bottom);z-index:16}
-.tabbar button{border:0;background:none;height:var(--tab);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;position:relative}
-.tabbar button svg{width:23px;height:23px}
-.tabbar button.on{color:var(--ink)}
-.tabbar button.on::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;background:var(--amber);border-radius:0 0 3px 3px}
-.badge{position:absolute;top:8px;left:calc(50% + 6px);background:var(--bad);color:#fff;font-size:11px;border-radius:9px;padding:0 5px;min-width:17px;line-height:17px}
-
-/* sheets */
-.sheetBg{position:fixed;inset:0;background:rgba(15,22,32,.5);display:none;align-items:flex-end;justify-content:center;z-index:40}
-.sheetBg.open{display:flex}
-.sheet{background:var(--surface);width:100%;max-width:720px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
-.sheet h3{font-family:var(--cond);font-size:24px;font-weight:600;margin:0 0 4px}
-.sheet p{color:var(--muted);font-size:14px;margin:0 0 12px}
-.sheet .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
-.sheet textarea{min-height:240px;font-size:13px;white-space:pre;overflow:auto}
-.locRow{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer}
-.locRow.cur{border-color:var(--board);box-shadow:inset 4px 0 0 var(--amber)}
+.locRow{display:flex;align-items:center;gap:10px;padding:13px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.locRow.cur{border-color:var(--blue);box-shadow:inset 4px 0 0 var(--blue)}
 .locRow .i{flex:1;min-width:0}
-.locRow b{display:block;font-family:var(--cond);font-size:19px;font-weight:600}
+.locRow b{display:block;font-size:17px}
 .locRow small{color:var(--muted)}
 .zrow{display:flex;align-items:center;gap:10px;padding:6px 0}
 .zrow label{flex:1}
 .zrow input{width:100px;text-align:center}
-.field{display:block;margin-bottom:10px}
-.field span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.aliases{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.aliases span{background:var(--bg);border-radius:999px;padding:5px 6px 5px 11px;font-size:14px;display:inline-flex;align-items:center;gap:4px}
+.aliases button{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
+.teach{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+details.help{margin-top:6px}
+details.help summary{cursor:pointer;font-weight:700}
+details.help ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
+details.help li{margin-bottom:6px}
+details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
+.logoPrev{display:flex;align-items:center;gap:10px}
+.logoPrev img{height:40px;max-width:140px;object-fit:contain;border:1px solid var(--line);border-radius:8px;padding:4px}
 
-#toast{position:fixed;left:50%;bottom:calc(var(--tab) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--board);color:#fff;padding:11px 14px;border-radius:12px;display:none;align-items:center;gap:12px;max-width:92vw;z-index:45;font-size:15px;box-shadow:0 6px 20px rgba(15,22,32,.25)}
-#toast button{background:none;border:1px solid #556275;color:var(--amber);border-radius:8px;padding:5px 9px;font-weight:600;cursor:pointer}
+#toast{position:fixed;left:50%;bottom:calc(var(--nav) + 14px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 14px;border-radius:12px;display:none;align-items:center;gap:12px;max-width:92vw;z-index:45;font-size:15px;box-shadow:0 8px 24px rgba(4,20,45,.35)}
+#toast button{background:none;border:1px solid #4A5A70;color:var(--accent);border-radius:8px;padding:5px 9px;font-weight:700;cursor:pointer}
 
-/* pocket */
 #pocket{position:fixed;inset:0;background:#000;color:#cfd6df;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px;touch-action:none;user-select:none;-webkit-user-select:none}
 #pocket.open{display:flex}
-#pkDot{width:16px;height:16px;border-radius:50%;background:var(--amber);animation:pd 1.6s infinite}
+#pkDot{width:16px;height:16px;border-radius:50%;background:#3B82F6;animation:pd 1.6s infinite}
 #pkDot.off{background:var(--bad);animation:none}
-@keyframes pd{0%{box-shadow:0 0 0 0 rgba(242,169,0,.6)}70%{box-shadow:0 0 0 18px rgba(242,169,0,0)}100%{box-shadow:0 0 0 0 rgba(242,169,0,0)}}
-#pkZone{font-family:var(--cond);font-size:30px;font-weight:600;color:var(--amber)}
+@keyframes pd{0%{box-shadow:0 0 0 0 rgba(59,130,246,.6)}70%{box-shadow:0 0 0 18px rgba(59,130,246,0)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
+#pkZone{font-size:28px;font-weight:800;color:#fff}
 #pkLast{font-size:20px;color:#fff;min-height:28px;max-width:340px}
 #pkLive{font-size:15px;color:#7d8794;font-style:italic;min-height:22px}
 #pkMsg{font-size:14px;color:#7d8794;max-width:300px}
 #pkResume{display:none}
 #pkUnlock{margin-top:24px;width:120px;height:120px;border-radius:50%;border:2px solid #333;color:#7d8794;display:grid;place-items:center;font-size:13px}
-#pkUnlock.hold{border-color:var(--amber);color:var(--amber)}
-details.help summary{cursor:pointer;font-weight:600}
-details.help ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px}
-details.help li{margin-bottom:6px}
-details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
+#pkUnlock.hold{border-color:#fff;color:#fff}
 </style>
 </head>
 <body>
 
-<header class="board">
-  <div class="brandRow">
-    <div class="logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1C2633" stroke-width="2.4" stroke-linecap="round"><path d="M6 5v14M10 5v14M14 5v14M18 5v14"/><path d="M3.5 16.5 20.5 7.5"/></svg>
+<div class="app">
+  <header class="top">
+    <div class="mark">
+      <img id="logoImg" alt="" hidden>
+      <div class="word"><b>Conteo</b><small id="companyLbl">por Edgar Frías</small><small id="netLbl" class="net" hidden>Sin cobertura · se guarda en el móvil</small></div>
     </div>
-    <div class="brand"><b>Recuento</b><small id="companyLbl">Inventario por voz</small><small id="netLbl" class="net" hidden>Sin cobertura · todo se guarda en el móvil</small></div>
-    <button class="localBtn" id="localBtn" aria-label="Cambiar de local">
-      <span><b id="localName">—</b><small id="localDate"></small></span>
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9FB0C3" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+    <div class="sp"></div>
+    <button class="pill" id="localBtn" aria-label="Cambiar de local"><span id="localName">—</span><span id="localDate" hidden></span></button>
+    <button class="icon" id="setBtn" aria-label="Ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+  </header>
+
+  <section class="where">
+    <button class="zoneBtn" id="zoneOpen"><span id="zoneLbl">Elige una zona</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="prog"><div class="t"><b id="progN">0</b> de <span id="progT">0</span> artículos contados</div><div class="bar"><div id="progBar"></div></div></div>
+    <div id="flap"></div>
+  </section>
+
+  <section class="recWrap">
+    <button id="mic" aria-label="Grabar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
     </button>
-  </div>
-  <div class="flights">
-    <div class="zoneNow"><small>Contando en</small><b id="zoneLbl">Elige una zona</b></div>
-    <div class="flap" id="flap" aria-label="Artículos contados"></div>
-    <div class="prog"><div id="progBar"></div></div>
-  </div>
-</header>
-
-<main>
-  <!-- CONTAR -->
-  <section class="view on" id="v-contar">
-    <div class="zones" id="zones"></div>
-
-    <div class="panel">
-      <div class="micWrap">
-        <button id="mic" aria-label="Empezar a escuchar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
-        </button>
-        <div id="micState">Pulsa y di: «leche doce»</div>
-        <div id="live"></div>
-      </div>
-      <div class="actions">
-        <button class="btn dark" id="lockBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Modo bolsillo</button>
-        <button class="btn" id="kbBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>Escribir</button>
-      </div>
-      <form class="type" id="form" hidden>
-        <input id="txt" placeholder="leche 12 · o dicta con el micro del teclado" autocomplete="off" enterkeyhint="send">
-        <button class="btn amber" type="submit">Añadir</button>
-      </form>
-      <div class="modeRow"><span>Cuando dude</span>
-        <div class="seg" id="askSeg"><button data-a="0" class="act">Apuntar y seguir</button><button data-a="1">Preguntarme</button></div>
-      </div>
-      <div class="modeRow"><span>En modo bolsillo, decirme</span>
-        <div class="seg" id="fbSeg"><button data-f="all" class="act">Todo</button><button data-f="doubt">Solo dudas</button></div>
-      </div>
-      <div class="modeRow"><span>Si repites un artículo en la misma zona</span>
-        <div class="seg" id="mode"><button data-m="add" class="act">Sumar</button><button data-m="set">Sustituir</button></div>
-      </div>
+    <div id="micState">Toca para grabar</div>
+    <div id="live"></div>
+    <div class="subActs">
+      <button class="ghostBtn" id="lockBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Bolsillo</button>
+      <button class="ghostBtn" id="kbBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/></svg>Escribir</button>
     </div>
+    <form class="type" id="form" hidden>
+      <input id="txt" placeholder="leche 12" autocomplete="off" enterkeyhint="send">
+      <button class="btn pri" type="submit">Añadir</button>
+    </form>
+  </section>
 
+  <section class="feed">
     <div id="heldBox" hidden></div>
     <div id="pendList"></div>
     <div id="lastBox"></div>
-
-    <div class="panel">
-      <details class="help">
-        <summary>Qué puedo decir</summary>
-        <ul>
-          <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>. Una zona nueva se crea sola.</li>
-          <li>Artículo y cantidad, en cualquier orden y con el nombre aproximado: <q>doce leche</q>, <q>bitel 74</q>, <q>vaso de ocho onzas 800</q>. Nunca te para a preguntar: si duda, lo deja en «Para revisar».</li>
-          <li>Decimales: <q>cuatro coma cinco</q>, <q>dos y medio</q>.</li>
-          <li>Con pausa para contar, el tiempo que necesites: <q>leche</q> … <q>doce</q>. Si cuentas en voz alta (<q>uno, dos, tres… doce</q>) se queda con el último número.</li>
-          <li>Varios seguidos sin parar: <q>leche doce, bitel setenta y cuatro, kas limón veintidós</q>.</li>
-          <li>Si se equivoca, corrígelo al momento: <q>no</q> (pasa a la siguiente opción), <q>no, la veri pequeña</q>, <q>no, quince</q> (cambia la cantidad).</li>
-          <li>Preguntas: <q>¿cuánto hay en la barra?</q>, <q>¿cuánta leche hay?</q>, <q>resumen general</q>.</li>
-          <li><q>corrige leche trece</q> cambia la cantidad de la zona actual. <q>deshacer</q> anula lo último.</li>
-        </ul>
-      </details>
-    </div>
   </section>
+  <div class="credit">Conteo · Diseñado por Edgar Frías</div>
+</div>
 
-  <!-- LISTA -->
-  <section class="view" id="v-lista">
-    <div class="panel">
-      <div class="tools">
-        <input id="search" type="search" placeholder="Buscar por nombre o código">
-        <div class="seg" id="filter" style="align-self:flex-start"><button data-f="all" class="act">Todos</button><button data-f="zone">Esta zona</button><button data-f="todo">Faltan</button><button data-f="done">Contados</button></div>
-      </div>
-      <div id="list"></div>
-    </div>
-  </section>
-
-  <!-- RESUMEN -->
-  <section class="view" id="v-resumen">
-    <div class="panel" id="revPanel" hidden>
-      <h2>Para revisar <span class="hint" id="revN"></span></h2>
-      <div class="hint">Artículos que la app apuntó con dudas. Toca ✓ si está bien o elige el correcto.</div>
-      <div id="revList"></div>
-    </div>
-    <div class="zones" id="sumZones"></div>
-    <div class="panel">
-      <h2><span id="sumTitle">Resumen</span><button class="btn sm" id="sumSpeak"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>Leer</button></h2>
-      <div class="hint" id="sumSub"></div>
-      <div class="rows" id="sumList" style="margin-top:8px"></div>
-    </div>
-    <div class="panel">
-      <h2>Historial <button class="btn sm" id="undoBtn">Deshacer último</button></h2>
-      <div class="rows" id="log"></div>
-    </div>
-  </section>
-
-  <!-- EXPORTAR -->
-  <section class="view" id="v-exportar">
-    <div class="panel exp">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#2E8B57" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13l4 5M12 13l-4 5"/></svg></div>
-      <div style="flex:1"><b>Excel del inventario</b><p>Mismo formato y mismo orden que el inventario que importaste, con el total contado en la columna de cantidad. Incluye una hoja con el desglose por zonas.</p><button class="btn ok" id="xlsBtn">Descargar Excel</button></div>
-    </div>
-    <div class="panel exp">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#1B2430" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
-      <div style="flex:1"><b>Pasar al ordenador</b><p>Lista en el orden del inventario con números grandes. Toca cada línea al teclearla y se tacha.</p><button class="btn dark" id="pcBtn">Abrir lista</button></div>
-    </div>
-    <div class="panel exp">
-      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#1B2430" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></div>
-      <div style="flex:1"><b>Copiar como texto</b><p>Para mandarlo por WhatsApp o correo.</p><button class="btn" id="copyBtn">Copiar</button></div>
-    </div>
-    <div class="panel">
-      <label class="field"><span>Responsable del recuento</span><input id="resp" placeholder="Nombre"></label>
-      <button class="btn full" id="restoreBtn" hidden></button>
-    </div>
-    <div class="panel danger">
-      <b>Borrar el inventario completo</b>
-      <p class="hint" style="margin:4px 0 10px">Pone a cero todas las cantidades de todas las zonas de este local, con su historial. La lista de artículos, las zonas y lo aprendido se mantienen.</p>
-      <button class="btn full delbtn" id="resetBtn">Borrar inventario completo</button>
-    </div>
-  </section>
-</main>
-
-<nav class="tabbar" id="tabbar">
-  <button data-v="contar" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/></svg>Contar<span class="badge" id="pendBadge" hidden></span></button>
-  <button data-v="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>Lista</button>
-  <button data-v="resumen"><span class="badge" id="revBadge" hidden></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Resumen</button>
+<nav class="nav" id="tabbar">
+  <button data-v="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg>Lista<span class="badge" id="revBadge" hidden></span><span id="pendBadge" hidden></span></button>
+  <button data-v="locales"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 21h18M5 21V8l7-5 7 5v13M10 21v-6h4v6"/></svg>Locales</button>
   <button data-v="exportar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Exportar</button>
+  <button data-v="cero" id="resetBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>A cero</button>
 </nav>
 
 <div id="toast"><span id="toastTxt"></span><button id="toastUndo">Deshacer</button></div>
 
-<!-- pocket mode -->
 <div id="pocket" aria-live="polite">
   <div id="pkDot"></div>
   <div id="pkZone"></div>
   <div id="pkLast">Escuchando</div>
   <div id="pkLive"></div>
-  <button class="btn amber" id="pkResume">Toca para seguir escuchando</button>
-  <div id="pkMsg">Micro bloqueado. Ve cantando artículos y te confirmo en voz alta. Deja la pantalla encendida.</div>
+  <button class="btn" id="pkResume">Toca para seguir escuchando</button>
+  <div id="pkMsg">Micro bloqueado. Ve diciendo artículos y te confirmo en voz alta. Deja la pantalla encendida.</div>
   <div id="pkUnlock">Mantén 2 s<br>para salir</div>
 </div>
 
-<!-- sheets -->
-<div class="sheetBg" id="locSheet"><div class="sheet">
-  <h3>Locales</h3>
-  <p>Cada local tiene su lista de artículos, sus zonas y su recuento.</p>
-  <div id="locList"></div>
-  <label class="btn amber full" style="margin-top:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>Importar inventario (Excel)<input type="file" id="impFile" accept=".xls,.xlsx,.csv" hidden></label>
-  <div class="acts" style="justify-content:space-between">
-    <span>
-      <button class="btn sm" id="editArtBtn">Editar artículos</button>
-      <button class="btn sm" id="editZoneBtn">Editar zonas</button>
-    </span>
-    <button class="btn sm" id="locClose">Cerrar</button>
+<!-- zones -->
+<div class="sheetBg" id="zoneSheet"><div class="sheet">
+  <h3>Zona <button class="x" data-close="zoneSheet" aria-label="Cerrar">×</button></h3>
+  <p>También puedes decirlo: «voy a contar la cámara positiva».</p>
+  <div class="zones" id="zones"></div>
+</div></div>
+
+<!-- list -->
+<div class="sheetBg" id="listSheet"><div class="sheet tall">
+  <h3>Lista <button class="x" data-close="listSheet" aria-label="Cerrar">×</button></h3>
+  <div class="revBox" id="revPanel" hidden>
+    <b>Para revisar <span id="revN"></span></b>
+    <div class="hint" style="margin:2px 0 0">Apuntados con dudas. Toca ✓ si está bien o elige el correcto.</div>
+    <div id="revList"></div>
   </div>
-  <label class="field" style="margin-top:14px"><span>Nombre de la empresa (aparece en la cabecera)</span><input id="company" placeholder="Por ejemplo, Ibersol Pansfood"></label>
+  <div class="tools">
+    <input id="search" type="search" placeholder="Buscar por nombre o código">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+      <div class="seg" id="filter"><button data-f="all" class="act">Todos</button><button data-f="zone">Esta zona</button><button data-f="todo">Faltan</button><button data-f="done">Contados</button></div>
+      <button class="btn sm" id="byZoneBtn">Por zonas</button>
+    </div>
+  </div>
+  <div id="list"></div>
+  <details class="help" style="margin-top:14px"><summary>Historial</summary>
+    <div style="margin:8px 0"><button class="btn sm" id="undoBtn">Deshacer último</button></div>
+    <div class="rows" id="log"></div>
+  </details>
+</div></div>
+
+<!-- summary -->
+<div class="sheetBg" id="sumSheet"><div class="sheet tall">
+  <h3><span id="sumTitle">Resumen</span><span style="display:flex;gap:8px"><button class="btn sm" id="sumSpeak">Leer</button><button class="x" data-close="sumSheet" aria-label="Cerrar">×</button></span></h3>
+  <div class="hint" id="sumSub"></div>
+  <div class="zones" id="sumZones" style="margin-bottom:10px"></div>
+  <div class="rows" id="sumList"></div>
+</div></div>
+
+<!-- export -->
+<div class="sheetBg" id="expSheet"><div class="sheet">
+  <h3>Exportar <button class="x" data-close="expSheet" aria-label="Cerrar">×</button></h3>
+  <button class="expRow" id="xlsBtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13l4 5M12 13l-4 5"/></svg></span><span><b>Descargar Excel</b><small>Mismo formato y orden que el inventario, con hoja por zonas</small></span></button>
+  <button class="expRow" id="pcBtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span><span><b>Pasar al ordenador</b><small>Lista en orden con números grandes para teclear</small></span></button>
+  <button class="expRow" id="copyBtn"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></span><span><b>Copiar como texto</b><small>Para WhatsApp o correo</small></span></button>
+</div></div>
+
+<!-- settings -->
+<div class="sheetBg" id="setSheet"><div class="sheet">
+  <h3>Ajustes <button class="x" data-close="setSheet" aria-label="Cerrar">×</button></h3>
+  <div class="setRow"><span>Cuando dude</span><div class="seg" id="askSeg"><button data-a="0" class="act">Apuntar y seguir</button><button data-a="1">Preguntarme</button></div></div>
+  <div class="setRow"><span>En bolsillo, decirme</span><div class="seg" id="fbSeg"><button data-f="all" class="act">Todo</button><button data-f="doubt">Solo dudas</button></div></div>
+  <div class="setRow"><span>Artículo repetido en la zona</span><div class="seg" id="mode"><button data-m="add" class="act">Sumar</button><button data-m="set">Sustituir</button></div></div>
+  <h4>Datos</h4>
+  <label class="field"><span>Responsable del recuento</span><input id="resp" placeholder="Nombre"></label>
+  <label class="field"><span>Empresa o texto bajo «Conteo»</span><input id="company" placeholder="por Edgar Frías"></label>
+  <h4>Logotipo de la empresa</h4>
+  <div class="logoPrev"><img id="logoPrev" alt="" hidden><label class="btn sm">Subir imagen<input type="file" id="logoFile" accept="image/*" hidden></label><button class="btn sm" id="logoDel" hidden>Quitar</button></div>
+  <p style="margin-top:6px">Usa el archivo oficial del logo de tu empresa. Se guarda solo en este móvil.</p>
+  <h4>Este local</h4>
+  <div class="actions"><button class="btn sm" id="editArtBtn">Editar artículos</button><button class="btn sm" id="editZoneBtn">Editar zonas</button></div>
+  <details class="help"><summary>Qué puedo decir</summary>
+    <ul>
+      <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>.</li>
+      <li>Artículo y cantidad, en cualquier orden: <q>doce leche</q>, <q>bitel 74</q>. Con pausa para contar: <q>leche</q> … <q>doce</q>.</li>
+      <li>Varios seguidos: <q>leche doce, bitel setenta y cuatro</q>.</li>
+      <li>Corregir: <q>no</q>, <q>no, la veri pequeña</q>, <q>no, quince</q>. <q>deshacer</q> anula lo último.</li>
+      <li>Preguntas: <q>¿cuánto hay en la barra?</q>, <q>¿cuánta leche hay?</q>, <q>resumen general</q>.</li>
+    </ul>
+  </details>
+  <p style="margin-top:16px;text-align:center">Conteo · Diseñado por Edgar Frías</p>
+</div></div>
+
+<!-- locals -->
+<div class="sheetBg" id="locSheet"><div class="sheet">
+  <h3>Locales <button class="x" data-close="locSheet" aria-label="Cerrar">×</button></h3>
+  <p>Cada local guarda su lista, sus zonas y su recuento.</p>
+  <div id="locList"></div>
+  <label class="btn pri full" style="margin-top:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>Añadir local desde su inventario (Excel)<input type="file" id="impFile" accept=".xls,.xlsx,.csv" hidden></label>
+  <button id="locClose" hidden></button>
 </div></div>
 
 <div class="sheetBg" id="impSheet"><div class="sheet">
-  <h3>Importar inventario</h3>
+  <h3>Añadir inventario</h3>
   <p id="impInfo"></p>
   <label class="field"><span>Nombre del local</span><input id="impName"></label>
-  <div class="acts">
-    <button class="btn" id="impCancel">Cancelar</button>
-    <button class="btn" id="impReplace" hidden>Actualizar este local</button>
-    <button class="btn amber" id="impNew">Crear local</button>
-  </div>
+  <div class="acts"><button class="btn" id="impCancel">Cancelar</button><button class="btn" id="impReplace" hidden>Actualizar este local</button><button class="btn pri" id="impNew">Crear local</button></div>
 </div></div>
 
 <div class="sheetBg" id="txtSheet"><div class="sheet">
   <h3 id="txtTitle"></h3><p id="txtHelp"></p>
   <textarea id="txtArea" spellcheck="false"></textarea>
-  <div class="acts"><button class="btn" id="txtCancel">Cancelar</button><button class="btn amber" id="txtSave">Guardar</button></div>
+  <div class="acts"><button class="btn" id="txtCancel">Cancelar</button><button class="btn pri" id="txtSave">Guardar</button></div>
 </div></div>
 
 <div class="sheetBg" id="wipeSheet"><div class="sheet">
-  <h3>¿Borrar el inventario completo?</h3>
+  <h3>Inventario a cero</h3>
   <p id="wipeInfo"></p>
+  <button class="btn full" id="restoreBtn" hidden style="margin-bottom:12px"></button>
   <label class="field"><span>Para confirmar, escribe <b>BORRAR</b></span><input id="wipeTxt" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
-  <div class="acts"><button class="btn" id="wipeNo">Cancelar</button><button class="btn delbtn solid" id="wipeYes" disabled>Borrar todo</button></div>
+  <div class="acts"><button class="btn" id="wipeNo">Cancelar</button><button class="btn delbtn solid" id="wipeYes" disabled>Poner a cero</button></div>
 </div></div>
 
 <div class="sheetBg" id="pzSheet"><div class="sheet">
@@ -407,29 +382,29 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
   <div id="pzList"></div>
   <div class="teach">
     <b>Cómo lo dices</b>
-    <p class="hint" style="margin:2px 0 0">Si la app no lo reconoce bien, pulsa «Enséñale» y di el nombre como lo dices tú. Guarda lo que entiende el móvil.</p>
+    <p style="margin:2px 0 0">Si no lo reconoce bien, pulsa «Enséñale» y di el nombre como lo dices tú.</p>
     <div class="aliases" id="pzAliases"></div>
-    <div class="actions"><button class="btn dark" id="teachBtn">🎤 Enséñale</button><input id="aliasTxt" placeholder="o escríbelo aquí"></div>
+    <div class="actions"><button class="btn pri" id="teachBtn">🎤 Enséñale</button><input id="aliasTxt" placeholder="o escríbelo aquí"></div>
   </div>
-  <div class="acts"><button class="btn" id="pzCancel">Cancelar</button><button class="btn amber" id="pzSave">Guardar</button></div>
+  <div class="acts"><button class="btn" id="pzCancel">Cancelar</button><button class="btn pri" id="pzSave">Guardar</button></div>
 </div></div>
 
-<div class="sheetBg" id="pcSheet"><div class="sheet" style="max-height:96vh">
-  <h3>Pasar al ordenador</h3>
+<div class="sheetBg" id="pcSheet"><div class="sheet tall">
+  <h3>Pasar al ordenador <button class="x" data-close="pcSheet" aria-label="Cerrar">×</button></h3>
   <p id="pcInfo"></p>
   <table class="pc" id="pcTable"></table>
-  <div class="acts"><button class="btn" id="pcReset">Quitar marcas</button><button class="btn amber" id="pcClose">Cerrar</button></div>
+  <div class="acts"><button class="btn" id="pcReset">Quitar marcas</button><button class="btn pri" id="pcClose">Cerrar</button></div>
 </div></div>
 
 <div class="sheetBg" id="copySheet"><div class="sheet">
   <h3>Copiar recuento</h3><p>Si el botón no copia, mantén pulsado el texto para seleccionarlo.</p>
   <textarea id="copyTxt" readonly></textarea>
-  <div class="acts"><button class="btn" id="copyClose">Cerrar</button><button class="btn amber" id="copyDo">Copiar</button></div>
+  <div class="acts"><button class="btn" id="copyClose">Cerrar</button><button class="btn pri" id="copyDo">Copiar</button></div>
 </div></div>
 
 <div class="sheetBg" id="cfmSheet"><div class="sheet">
   <h3 id="cfmTitle"></h3><p id="cfmText"></p>
-  <div class="acts"><button class="btn" id="cfmNo">Cancelar</button><button class="btn amber" id="cfmYes">Aceptar</button></div>
+  <div class="acts"><button class="btn" id="cfmNo">Cancelar</button><button class="btn pri" id="cfmYes">Aceptar</button></div>
 </div></div>
 
 <script>
@@ -844,7 +819,7 @@ function applyCount(pid,qty,mode,src,meta){
   const p=byId(pid),tot=total(pid),multi=Object.keys(L.counts[pid]||{}).length>1;
   lastAct={pid,z,prev,qty,next,tot,multi,m,e};
   renderAll(pid);
-  const say=`${meta.fixed?"Vale, ":""}${spokenName(p)}, ${fmt(next)}${multi&&!meta.fixed?`. Total ${fmt(tot)}`:""}`;
+  const say=`${meta.fixed?"Vale, ":""}${spokenName(p)} ${fmt(next)}`;
   if(meta.quiet){$("pkLast").textContent=`${label(p)}: ${fmt(next)}`;vib(1);return}
   feedback(say,`${meta.dud?"¿":""}${label(p)}: ${fmt(next)}${meta.dud?"?":""}${multi?` (total ${fmt(tot)})`:""}`,meta.dud?2:1,meta.dud||meta.fixed);
 }
@@ -952,24 +927,61 @@ function handleText(text,fromVoice,tag){
   if(fromVoice){
     if(isEcho(text))return;
     const nt=norm(text),now=Date.now();
-    if(nt===lastHeard.t&&now-lastHeard.at<1500)return;
+    if(nt===lastHeard.t&&now-lastHeard.at<1500&&!(tag&&/_f$/.test(tag)))return;
     lastHeard={t:nt,at:now};
   }
   const parts=text.replace(/(\d)[.,](\d)/g,"$1§$2").split(/[;,.\n]+|\b(?:siguiente|luego|despues|después)\b/i).map(s=>s&&s.replace(/§/g,",").trim()).filter(Boolean);
   // a correction can come split by a comma: "no, la veri pequeña"
   for(let i=0;i<parts.length-1;i++){if(/^(no|no es|no era|ese no|esa no)$/i.test(norm(parts[i]))){parts.splice(i,2,parts[i]+" "+parts[i+1])}}
-  for(const ph of parts){
+  for(const ph0 of parts){
+    // "pepsi 47 más 13", "más 13", "menos 2": the extra amount goes to the last article
+    const segs=splitOps(ph0);
+    for(const sg of segs){
+      if(sg.op){addToLast(sg.q*(sg.op==="-"?-1:1),ph0,tag);continue}
+      handleOne(sg.text,fromVoice,tag);
+    }
+  }
+}
+const OPW={mas:"+",sumale:"+",anade:"+",anademe:"+",menos:"-",quitale:"-",resta:"-",restale:"-"};
+function splitOps(ph){
+  const tk=norm(ph.replace(/\s*\+\s*/g," mas ").replace(/\s+-\s+/g," menos ")).replace(/[,.]+$/,"").split(" ").filter(Boolean);
+  const runs=numberRuns(tk);
+  const out=[];let start=0;
+  for(let i=0;i<tk.length;i++){
+    const op=OPW[tk[i]];if(!op)continue;
+    const r=runs.find(x=>x.start===i+1);if(!r)continue;
+    // only a bare amount after the operator ("más 13"), not "más leche"
+    const after=tk.slice(r.end+1).filter(t=>!/^(unidades?|uds?|cajas?|mas|menos)$/.test(t));
+    const nextOp=tk.slice(r.end+1).findIndex(t=>OPW[t]);
+    if(after.length&&nextOp!==0)continue;
+    if(i>start)out.push({text:tk.slice(start,i).join(" ")});
+    out.push({op,q:r.value});
+    start=r.end+1;i=r.end;
+  }
+  if(start<tk.length)out.push({text:tk.slice(start).join(" ")});
+  return out.length?out:[{text:ph}];
+}
+function addToLast(q,src,tag){
+  const le=L.log.find(x=>x.src);
+  if(!le){toast("Primero di un artículo");feedback("Primero di un artículo","Primero di un artículo",3,true);return}
+  const wasZone=L.zone;L.zone=le.zone===NOZONE?null:le.zone;
+  const cur=zq(le.pid,le.zone)||0;if(cur+q<0)q=-cur;
+  applyCount(le.pid,q,"add",src,{alts:le.alts,query:le.query,tag});
+  L.zone=wasZone;save();
+}
+function handleOne(ph,fromVoice,tag){
+  {
     const n=norm(ph);
     const cm=n.match(/^(?:no|no es|no era|ese no|esa no|el otro|la otra|otro|otra|error|cambialo|cambiala)(?:\s+(?:es|era|eran|son|el|la|los|las))*\s*(.*)$/);
-    if(cm&&!(S.ask&&L.pending.length)){correctLast(cm[1]);continue}
+    if(cm&&!(S.ask&&L.pending.length)){correctLast(cm[1]);return}
     const c=parseCommand(L.items,L.zones,ph);
     if(c){
-      if(c.cmd==="zone"){setZone(c.zone,true);continue}
-      if(c.cmd==="newzone"){const name=cap(c.name);let id="z_"+norm(name).replace(/\s/g,"_");if(!zoneById(id))L.zones.push({id,name,alias:[]});setZone(id,true);continue}
-      if(c.cmd==="askzone"){showSummary(c.zone,true);continue}
-      if(c.cmd==="askcurrent"){showSummary(L.zone||"__all",true);continue}
-      if(c.cmd==="askall"){showSummary("__all",true);continue}
-      if(c.cmd==="askprod"){answerProd(c.prod?[c.prod]:c.opts,c.zone);continue}
+      if(c.cmd==="zone"){setZone(c.zone,true);return}
+      if(c.cmd==="newzone"){const name=cap(c.name);let id="z_"+norm(name).replace(/\s/g,"_");if(!zoneById(id))L.zones.push({id,name,alias:[]});setZone(id,true);return}
+      if(c.cmd==="askzone"){showSummary(c.zone,true);return}
+      if(c.cmd==="askcurrent"){showSummary(L.zone||"__all",true);return}
+      if(c.cmd==="askall"){showSummary("__all",true);return}
+      if(c.cmd==="askprod"){answerProd(c.prod?[c.prod]:c.opts,c.zone);return}
     }
     for(const r of parseMulti(L.items,ph)){
       const first=L.pending[0];
@@ -1023,9 +1035,9 @@ function handleText(text,fromVoice,tag){
 }
 // commit early only when there is no doubt at all
 function confident(text){
-  const parts=text.split(/[;,.]+/).filter(s=>s.trim());if(!parts.length)return false;
+  const parts=text.split(/[;,.]+/).flatMap(p=>splitOps(p)).filter(sg=>!sg.op).map(sg=>sg.text).filter(s=>s&&s.trim());if(!parts.length)return false;
   return parts.every(ph=>{const n=norm(ph);if(/^(no|si|vale|el otro|la otra|otro|otra|error|deshacer)\b/.test(n))return false;if(parseCommand(L.items,L.zones,ph))return false;
-    const items=parseMulti(L.items,ph);return items.length&&items.every(r=>!r.cmd&&r.qty!=null&&r.query&&(()=>{const ch=chooseSmart(r);return ch&&!ch.dud&&ch.score>=.85})())});
+    const items=parseMulti(L.items,ph);return items.length&&items.every(r=>!r.cmd&&r.qty!=null&&r.query&&(()=>{const ch=chooseSmart(r);return ch&&!ch.dud&&ch.score>=.8})())});
 }
 
 /* ================= rendering ================= */
@@ -1033,8 +1045,8 @@ let view="contar",filter="all",sumZone="__all",lastAnswer="";
 function renderAll(flash){renderBoard();renderZones();renderLast();renderPending();renderList(flash);if(view==="resumen")showSummary(sumZone,false);renderLog();renderRestore()}
 let lastFlap="";
 function renderBoard(){
-  $("localName").textContent=L.name;$("localDate").textContent=L.date?("Inventario "+L.date):"";
-  $("companyLbl").textContent=S.company||"Inventario por voz";
+  $("localName").textContent=L.name;
+  $("companyLbl").textContent=S.company||"por Edgar Frías";renderLogo();
   $("zoneLbl").textContent=L.zone?zName(L.zone):"Elige una zona";
   const n=counted(),tot=L.items.length;
   const s=String(n).padStart(String(tot).length,"0")+"/"+tot;
@@ -1042,14 +1054,14 @@ function renderBoard(){
     $("flap").innerHTML=[...s].map((ch,i)=>`<i class="${ch==="/"?"sep":""}${lastFlap&&lastFlap[i]!==ch&&ch!=="/"?" flip":""}">${ch}</i>`).join("");
     lastFlap=s;
   }
-  $("progBar").style.width=(tot?n/tot*100:0)+"%";
-  const pc=L.pending.length;$("pendBadge").hidden=!pc;$("pendBadge").textContent=pc;
+  $("progBar").style.width=(tot?n/tot*100:0)+"%";$("progN").textContent=n;$("progT").textContent=tot;
+  const pc=L.pending.length;$("pendBadge").textContent=pc;
 }
 function renderZones(){
-  $("zones").innerHTML=L.zones.map(z=>`<button class="zchip${z.id===L.zone?" cur":""}" data-z="${esc(z.id)}">${esc(z.name)}</button>`).join("")+`<button class="zchip add" data-zedit>Editar zonas</button>`;
+  $("zones").innerHTML=L.zones.map(z=>`<button class="zchip${z.id===L.zone?" cur":""}" data-z="${esc(z.id)}">${esc(z.name)}</button>`).join("")+`<button class="zchip add" data-zedit>+ Zona / editar</button>`;
 }
 function renderLast(){
-  if(!lastAct){$("lastBox").innerHTML=L.log.length?"":`<div class="last empty"><div class="t"><b>Elige la zona y empieza a contar</b><small>Toca una zona arriba o di «voy a contar la cámara positiva».</small></div></div>`;return}
+  if(!lastAct){$("lastBox").innerHTML="";return}
   const a=lastAct,p=byId(a.pid);if(!p){$("lastBox").innerHTML="";return}
   const alts=(a.e&&a.e.alts||[]).filter(id=>byId(id)).slice(0,3);
   const altHtml=alts.length?`<div class="alts"><span>${a.e.dud?"¿Seguro? Cambiar por:":"¿No era? Cambiar por:"}</span>${alts.map(id=>`<button class="altc" data-sw="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div>`:"";
@@ -1066,7 +1078,7 @@ function renderPending(){
     let body;
     if(!S.ask&&pd.kind==="confirm"&&pd.qty==null){const p=byId(pd.opts[0]);
       body=`<div class="q">${esc(p?p.name:"?")}<small>${pd.stale?"Se quedó sin cantidad: escríbela o descártalo":"Esperando la cantidad: dila cuando la tengas, sin prisa"}</small></div>
-      <div class="actions" style="margin-bottom:8px"><input class="pq" inputmode="decimal" placeholder="Cantidad"><button class="btn amber" data-pick="${esc(pd.opts[0])}">Apuntar</button></div>
+      <div class="actions" style="margin-bottom:8px"><input class="pq" inputmode="decimal" placeholder="Cantidad"><button class="btn pri" data-pick="${esc(pd.opts[0])}">Apuntar</button></div>
       ${pd.opts.length>1?`<div class="alts" style="margin:0 0 6px"><span>¿Era otro?</span>${pd.opts.slice(1,4).map(id=>`<button class="altc" data-pick="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div>`:""}${links}`;
       return `<div class="pend wait${pd.stale?" stale":""}" data-pid="${pd.id}"><div class="said">Has dicho «${esc(pd.raw)}»</div>${body}</div>`}
     if(pd.kind==="confirm"){const p=byId(pd.opts[0]);
@@ -1128,7 +1140,7 @@ function showSummary(z,speak){
   $("sumList").innerHTML=items.length?items.map(({p,v})=>`<div><span>${esc(p.name)}</span><span class="v">${fmt(v)} <small class="hint">${esc(p.unit)}</small></span></div>`).join(""):`<div class="hint">Todavía no hay nada contado aquí.</div>`;
   if(z==="__all"){const uz=usedZones();lastAnswer=items.length?`Llevas ${items.length} de ${L.items.length} artículos contados. `+uz.map(id=>`${zName(id)}: ${zoneItems(id).length} artículos`).join(". ")+".":"Todavía no has contado nada."}
   else lastAnswer=items.length?`En ${title.toLowerCase()} llevas ${items.length} artículo${items.length>1?"s":""}: `+items.map(({p,v})=>`${spokenName(p)}, ${fmt(v)}`).join("; ")+".":`En ${title.toLowerCase()} todavía no has contado nada.`;
-  if(speak){go("resumen");say(lastAnswer)}
+  if(speak){go("resumen");say(lastAnswer)}else if(!$("sumSheet").classList.contains("open")&&view==="resumen")openS("sumSheet");
 }
 function answerProd(ids,z){
   ids=ids.filter(id=>byId(id));if(!ids.length)return;
@@ -1147,13 +1159,18 @@ function answerProd(ids,z){
 }
 
 /* ================= navigation ================= */
+const SHEET={lista:"listSheet",resumen:"sumSheet",exportar:"expSheet",locales:"locSheet"};
 function go(v){
-  view=v;document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
-  document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
-  if(v==="lista")renderList();if(v==="exportar")renderRestore();if(v==="resumen"&&!$("sumList").innerHTML)showSummary(sumZone,false);
-  window.scrollTo({top:0});
+  document.querySelectorAll(".sheetBg.open").forEach(s=>{if(s.id!==SHEET[v])s.classList.remove("open")});
+  view=v;if(v==="contar")return;
+  if(v==="lista")renderList();if(v==="locales")renderLocals();if(v==="resumen"&&!$("sumList").innerHTML)showSummary(sumZone,false);
+  openS(SHEET[v]);
 }
-$("tabbar").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.v==="resumen")showSummary(L.zone||"__all",false);go(b.dataset.v)});
+$("tabbar").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.dataset.v==="cero")return;go(b.dataset.v)});
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>{closeS(b.dataset.close);view="contar"}));
+$("zoneOpen").onclick=()=>{renderZones();openS("zoneSheet")};
+$("setBtn").onclick=()=>{$("company").value=S.company||"";renderLogo();openS("setSheet")};
+$("byZoneBtn").onclick=()=>{showSummary(L.zone||"__all",false);openS("sumSheet")};
 
 /* ================= events ================= */
 let tt;function toast(msg,canUndo){$("toastTxt").textContent=msg;$("toastUndo").style.display=canUndo?"":"none";$("toast").style.display="flex";clearTimeout(tt);tt=setTimeout(()=>$("toast").style.display="none",3000)}
@@ -1175,7 +1192,7 @@ $("undoBtn").onclick=undo;
 $("lastBox").addEventListener("click",e=>{if(e.target.closest("[data-undo]"))return undo();const s=e.target.closest("[data-sw]");if(s&&lastAct&&lastAct.e&&L.log.includes(lastAct.e))switchEntry(lastAct.e,s.dataset.sw,null)});
 $("resp").addEventListener("input",e=>{S.resp=e.target.value;save()});
 $("company").addEventListener("input",e=>{S.company=e.target.value;save();renderBoard()});
-$("zones").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.hasAttribute("data-zedit"))return editZones();setZone(b.dataset.z,false)});
+$("zones").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;closeS("zoneSheet");if(b.hasAttribute("data-zedit"))return editZones();setZone(b.dataset.z,false)});
 $("sumZones").addEventListener("click",e=>{const b=e.target.closest("[data-z]");if(b)showSummary(b.dataset.z,false)});
 $("sumSpeak").onclick=()=>say(lastAnswer);
 $("revList").addEventListener("click",ev=>{const row=ev.target.closest(".rev");if(!row)return;const e=L.log.find(x=>String(x.t)===row.dataset.t);if(!e)return;
@@ -1244,9 +1261,8 @@ $("pzSave").onclick=()=>{
 function renderLocals(){
   $("locList").innerHTML=S.locals.map(l=>{const n=l.items.filter(p=>{const m=l.counts[p.id];return m&&Object.keys(m).length}).length;
     return `<div class="locRow${l.id===L.id?" cur":""}" data-l="${l.id}"><div class="i"><b>${esc(l.name)}</b><small>${l.items.length} artículos · ${n} contados${l.date?" · inventario "+esc(l.date):""}</small></div>${S.locals.length>1?`<button class="btn sm ghost" data-del="${l.id}" aria-label="Borrar local">Borrar</button>`:""}</div>`}).join("");
-  $("company").value=S.company||"";
 }
-$("localBtn").onclick=()=>{renderLocals();openS("locSheet")};
+$("localBtn").onclick=()=>go("locales");
 $("locClose").onclick=()=>closeS("locSheet");
 $("locList").addEventListener("click",e=>{
   const d=e.target.closest("[data-del]");
@@ -1300,7 +1316,7 @@ $("impReplace").onclick=()=>{
 
 /* text editors (articles / zones) */
 let txtSave=null;
-function editText(title,help,text,onSave){$("txtTitle").textContent=title;$("txtHelp").innerHTML=help;$("txtArea").value=text;txtSave=onSave;closeS("locSheet");openS("txtSheet")}
+function editText(title,help,text,onSave){$("txtTitle").textContent=title;$("txtHelp").innerHTML=help;$("txtArea").value=text;txtSave=onSave;closeS("locSheet");closeS("setSheet");openS("txtSheet")}
 $("txtCancel").onclick=()=>closeS("txtSheet");
 $("txtSave").onclick=()=>{if(txtSave&&txtSave($("txtArea").value)!==false)closeS("txtSheet")};
 $("editArtBtn").onclick=()=>editText("Artículos de "+L.name,"Una línea por artículo, en el orden del inventario: <b>código ; descripción ; unidad ; cómo lo dices ; otras formas separadas por |</b>",
@@ -1344,7 +1360,7 @@ $("xlsBtn").onclick=async()=>{
     const ws2=X.utils.aoa_to_sheet(det);ws2["!cols"]=[{wch:9},{wch:34},{wch:6}].concat(zs.map(()=>({wch:12})),[{wch:8},{wch:12},{wch:10}]);
     X.utils.book_append_sheet(wb,ws2,"Por zonas");
     const buf=X.write(wb,{type:"array",bookType:"xlsx"});
-    const d=today.toISOString().slice(0,10);
+    const d=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
     await saveFile(`INVENTARIO_${L.name.replace(/[^\w]+/g,"_")}_${d}.xlsx`,buf,"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   }catch(e){toast("No he podido generar el Excel")}
 };
@@ -1353,7 +1369,7 @@ function plain(){
   return `Inventario ${L.name} · ${d}${S.resp?" · "+S.resp:""}${f?` (faltan ${f})`:""}\n`+L.items.map(p=>{const t=total(p.id),m=L.counts[p.id]||{},ks=Object.keys(m);
     return `${p.code} ${p.name}: ${t==null?"—":fmt(t)} ${p.unit}${ks.length>1?" ("+ks.map(z=>zName(z)+" "+fmt(m[z])).join(", ")+")":""}`}).join("\n");
 }
-$("copyBtn").onclick=()=>{$("copyTxt").value=plain();openS("copySheet")};
+$("copyBtn").onclick=()=>{$("copyTxt").value=plain();closeS("expSheet");openS("copySheet")};
 $("copyDo").onclick=async()=>{try{await navigator.clipboard.writeText($("copyTxt").value);toast("Copiado")}catch(e){$("copyTxt").select();toast("Selecciónalo y cópialo a mano")}};
 $("copyClose").onclick=()=>closeS("copySheet");
 function renderPc(){
@@ -1361,14 +1377,14 @@ function renderPc(){
   $("pcInfo").textContent=`${L.name} · ${done} de ${L.items.length} tecleados. En el orden del inventario.`;
   $("pcTable").innerHTML=L.items.map((p,i)=>{const t=total(p.id);return `<tr data-id="${esc(p.id)}" class="${L.typed[p.id]?"done":""}"><td class="c">${esc(p.code)}</td><td class="d">${esc(p.name)}</td><td class="q">${t==null?"0":fmt(t)}</td></tr>`}).join("");
 }
-$("pcBtn").onclick=()=>{L.typed=L.typed||{};renderPc();openS("pcSheet")};
+$("pcBtn").onclick=()=>{L.typed=L.typed||{};renderPc();closeS("expSheet");openS("pcSheet")};
 $("pcTable").addEventListener("click",e=>{const r=e.target.closest("tr");if(!r)return;const id=r.dataset.id;if(L.typed[id])delete L.typed[id];else L.typed[id]=1;save();renderPc()});
 $("pcReset").onclick=()=>{L.typed={};save();renderPc()};
 $("pcClose").onclick=()=>closeS("pcSheet");
 $("resetBtn").onclick=()=>{
   const n=counted();
-  $("wipeInfo").textContent=n?`Se borrarán ${n} artículos contados de ${L.name}, en todas las zonas. Si te equivocas, podrás recuperarlo desde esta misma pantalla.`:`${L.name} no tiene nada contado todavía.`;
-  $("wipeTxt").value="";$("wipeYes").disabled=true;openS("wipeSheet");setTimeout(()=>$("wipeTxt").focus(),50);
+  $("wipeInfo").textContent=n?`Pone a cero los ${n} artículos contados de ${L.name}, en todas las zonas. La lista, las zonas y lo aprendido se mantienen. Si te equivocas, lo recuperas desde aquí.`:`${L.name} ya está a cero.`;
+  $("wipeTxt").value="";$("wipeYes").disabled=true;renderRestore();go("contar");openS("wipeSheet");
 };
 $("wipeTxt").addEventListener("input",()=>{$("wipeYes").disabled=$("wipeTxt").value.trim().toUpperCase()!=="BORRAR"});
 $("wipeNo").onclick=()=>closeS("wipeSheet");
@@ -1376,27 +1392,52 @@ $("wipeYes").onclick=()=>{
   if($("wipeTxt").value.trim().toUpperCase()!=="BORRAR")return;
   L.backup={at:Date.now(),counts:L.counts,log:L.log,pending:L.pending,typed:L.typed,zone:L.zone};
   L.counts={};L.log=[];L.pending=[];L.typed={};L.zone=null;lastAct=null;save();closeS("wipeSheet");renderAll();renderRestore();
-  toast("Inventario borrado");
+  toast("Inventario a cero");
 };
 function renderRestore(){
   const b=L.backup,btn=$("restoreBtn");
   if(!b){btn.hidden=true;return}
   const n=Object.keys(b.counts||{}).length;
-  btn.hidden=false;btn.textContent=`Recuperar el inventario borrado (${n} artículos, ${new Date(b.at).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})})`;
+  btn.hidden=false;btn.textContent=`↩ Recuperar lo borrado (${n} artículos, ${new Date(b.at).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})})`;
 }
 $("restoreBtn").onclick=()=>{const b=L.backup;if(!b)return;
   confirmBox("¿Recuperar el inventario borrado?",counted()?"Se sustituirá lo que has contado desde que lo borraste.":"Volverán todas las cantidades tal como estaban.",()=>{
-    Object.assign(L,{counts:b.counts,log:b.log,pending:b.pending,typed:b.typed||{},zone:b.zone});delete L.backup;lastAct=null;save();renderAll();renderRestore();toast("Inventario recuperado")})};
+    Object.assign(L,{counts:b.counts,log:b.log,pending:b.pending,typed:b.typed||{},zone:b.zone});delete L.backup;lastAct=null;save();closeS("wipeSheet");renderAll();renderRestore();toast("Inventario recuperado")})};
 
 /* ================= microphone ================= */
 let dict=null,listening=false,locked=false,wakeLock=null,wsRec=null,wsActive=false;
 const mic=$("mic"),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function setMic(on){listening=on;mic.classList.toggle("on",on);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando…":"Pulsa y di: «leche doce»";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
-function noMic(){$("micState").innerHTML="El micrófono no está disponible aquí";$("live").innerHTML="Usa <b>Escribir</b> y el micro del teclado, o abre la app en Chrome (Android) o en tu enlace de Safari (iPhone).";$("lockBtn").disabled=true;$("lockBtn").style.opacity=.5;$("form").hidden=false}
+function setMic(on){listening=on;mic.classList.toggle("on",on);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando… toca para parar":"Toca para grabar";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
+function noMic(){$("micState").textContent="Micro no disponible aquí";$("live").innerHTML="Escribe abajo o usa el micrófono del teclado.";$("lockBtn").hidden=true;$("form").hidden=false}
 function onHeard(t,tag){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(!t)return;
   if(teaching){const p=byId(teaching);teaching=null;$("teachBtn").textContent="🎤 Enséñale";if(addAlias(p,t))toast(`Aprendido: «${t}»`);return}
   handleText(t,true,tag)}
-let wsDone=new Set(),wsEarly={},wsTimer=null,wsSession=0;
+let wsDone=new Set(),wsEarly={},wsTimer=null,wsSession=0,dictSeq=0,dictBuf="";
+/* --- speed: count the phrase as soon as it is clear, don't wait for the recogniser to close it --- */
+const early={timer:null,done:new Set(),got:{},seq:0};
+const OPEN_END=/^(treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa|cien|ciento|doscient\w*|trescient\w*|cuatrocient\w*|quinient\w*|seiscient\w*|setecient\w*|ochocient\w*|novecient\w*|mil|y|coma|punto|mas|menos|no|de|del|la|el)$/;
+function onInterim(text,key){
+  clearTimeout(early.timer);
+  if(teaching||!text||!text.trim()||early.done.has(key))return;
+  const n=norm(text),last=n.split(" ").pop();
+  // a number that may still grow ("treinta…", "ciento…") waits a bit longer
+  const wait=OPEN_END.test(last)?900:/^\d+$/.test(last)&&n.split(" ").length<2?700:330;
+  early.timer=setTimeout(()=>{
+    if(early.done.has(key))return;
+    const prev=early.got[key];
+    if(prev&&prev.n===n)return;
+    if(!confident(text))return;
+    if(prev)revertTag(prev.tag); // the phrase grew since we counted it: redo it
+    const tag=key+"_e"+(++early.seq);early.got[key]={n,tag};
+    onHeard(text,tag);
+  },wait);
+}
+function onFinalText(text,key){
+  clearTimeout(early.timer);early.done.add(key);
+  const prev=early.got[key];
+  if(prev){if(prev.n===norm(text))return;revertTag(prev.tag)}
+  onHeard(text,key+"_f");
+}
 // Safari can return several guesses of the same phrase: score each against the article list
 function fitScore(text){
   const n=norm(text);if(!n)return -1;
@@ -1424,19 +1465,15 @@ function startWS(){
       // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
       let im="",lastIdx=-1;
       for(let i=0;i<e.results.length;i++){const r=e.results[i];
-        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);const t=bestAlt(r),tag="s"+wsSession+"_"+i,ea=wsEarly[i];
-          if(ea){if(norm(ea.text)!==norm(t)){revertTag(ea.tag);onHeard(t,tag+"f")}}else onHeard(t,tag)}}
+        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);onFinalText(bestAlt(r),"s"+wsSession+"_"+i)}}
         else{im+=r[0].transcript;lastIdx=i}}
       onPartialText(im);
-      clearTimeout(wsTimer);
-      if(lastIdx>=0&&!wsEarly[lastIdx]){const idx=lastIdx,txt=e.results[idx][0].transcript;
-        // speaker paused 0.6 s and the phrase is unambiguous: count it now instead of waiting for Safari
-        wsTimer=setTimeout(()=>{if(wsDone.has(idx)||wsEarly[idx])return;if(confident(txt)){const tag="s"+wsSession+"_"+idx;wsEarly[idx]={text:txt,tag};onHeard(txt,tag)}},600)}
+      if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,"s"+wsSession+"_"+lastIdx);
     };
     wsRec.onerror=e=>{
       if(e.error==="network"){netFail();if(!started)rej({code:"network"});return}
       if(!started)rej({code:/not-allowed|service-not-allowed/.test(e.error)?"not_granted":"upstream_error"});else if(e.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}};
-    wsRec.onend=()=>{wsActive=false;setMic(false);if(locked&&wsRec)setTimeout(()=>{try{wsRec.start()}catch(e){}},250)};
+    wsRec.onend=()=>{wsActive=false;setMic(false);if(locked&&wsRec)setTimeout(()=>{try{wsRec.start()}catch(e){}},60)};
     wsRec.start();
   }catch(e){rej({code:"unavailable"})}});
 }
@@ -1479,21 +1516,39 @@ let spoken={w:new Set(),until:0};
 function speakLocal(text){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();
   text=text.replace(/\boz\b/gi,"onzas").replace(/\bcl\b/gi,"centilitros");
   spoken={w:new Set(norm(text).split(" ").filter(Boolean)),until:Date.now()+1500+text.length*80};
-  const u=new SpeechSynthesisUtterance(text);u.lang="es-ES";u.rate=1.15;u.onend=()=>{spoken.until=Date.now()+700};speechSynthesis.speak(u)}catch(e){}}
+  const u=new SpeechSynthesisUtterance(text);u.lang="es-ES";u.rate=1.3;u.onend=()=>{spoken.until=Date.now()+700};speechSynthesis.speak(u)}catch(e){}}
 // drop what the mic picked up of our own voice, keep everything else
-function isEcho(t){if(Date.now()>spoken.until)return false;const w=norm(t).split(" ").filter(Boolean);if(!w.length)return true;const hit=w.filter(x=>spoken.w.has(x)).length;return hit/w.length>=.6}
+// only drop what is basically our own sentence; a longer phrase from the user that repeats a name is kept
+function isEcho(t){if(Date.now()>spoken.until)return false;const w=norm(t).split(" ").filter(Boolean);if(!w.length)return true;
+  if(w.length>spoken.w.size+1)return false;const hit=w.filter(x=>spoken.w.has(x)).length;return hit/w.length>=.8}
 function feedback(say,shown,kind,important){if(!locked)return;vib(kind);$("pkLast").textContent=shown;
-  if(S.voiceFb===false)return;if(S.fb==="doubt"&&!important)return;speakLocal(say)}
+  if(S.voiceFb===false)return;if(S.fb==="doubt"&&!important)return;
+  // a phrase redone because it grew shouldn't repeat what was already said
+  const k=norm(say);if(lastSaid[k]&&Date.now()-lastSaid[k]<4000&&!important)return;lastSaid[k]=Date.now();
+  speakLocal(say)}
+const lastSaid={};
 (async()=>{
   try{
     if(window.claude&&window.claude.use){
       const [d,dl,t]=await Promise.all(["dictation","downloads","tts"].map(n=>window.claude.use(n).catch(()=>null)));
       downloads=dl;tts=t;dict=d;
-      if(dict){dict.onState(({state})=>setMic(state!=="idle"));dict.onPartial(({text})=>onPartialText(text));dict.onFinal(({text})=>onHeard(text));return}
+      if(dict){dict.onState(({state})=>setMic(state!=="idle"));dict.onPartial(({text})=>{onPartialText(text);if(text)onInterim(dictBuf+text,"d"+dictSeq)});dict.onFinal(({text})=>{onFinalText(text,"d"+dictSeq);dictSeq++});return}
     }
     if(!SR||framed)noMic();
   }catch(e){noMic()}
 })();
+
+/* ================= logo ================= */
+function renderLogo(){
+  const has=!!S.logo;$("logoImg").hidden=!has;if(has)$("logoImg").src=S.logo;
+  if($("logoPrev")){$("logoPrev").hidden=!has;if(has)$("logoPrev").src=S.logo;$("logoDel").hidden=!has}
+}
+$("logoFile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  const img=new Image(),rd=new FileReader();
+  rd.onload=()=>{img.onload=()=>{const k=Math.min(1,240/img.height),c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+    c.getContext("2d").drawImage(img,0,0,c.width,c.height);S.logo=c.toDataURL("image/png");save();renderLogo();toast("Logo guardado")};img.src=rd.result};
+  rd.readAsDataURL(f)});
+$("logoDel").onclick=()=>{delete S.logo;save();renderLogo()};
 
 /* ================= offline ================= */
 if("serviceWorker" in navigator&&!framed&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
