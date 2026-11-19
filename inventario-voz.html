@@ -84,7 +84,7 @@ form.type input{flex:1}
 .fi.top{border-left:3px solid var(--accent);padding:12px 2px 14px 14px;background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,0));border-radius:0 10px 10px 0}
 .fi.top .ft b{font-size:17px;font-weight:700;color:#fff}
 .fi.top .fn{font-size:34px;font-weight:800;color:#fff;letter-spacing:-.02em}
-
+.fi.dud .ft b::after{content:"  · revisar";color:var(--accent);font-weight:600;font-size:12px}
 .fi.in{animation:fin .35s ease-out}
 @keyframes fin{0%{transform:translateX(-10px);opacity:0}100%{transform:none;opacity:1}}
 #lastBox{display:flex;flex-direction:column}
@@ -938,6 +938,7 @@ function chooseSmart(r){
   const top=c[0].s,z=curZone();
   let pool=c.filter(x=>x.s>=top-.12&&x.s>=.45).slice(0,6);
   const ctx=x=>{let b=x.s;const p=x.p;
+    if(r.qty!=null&&p.prev!=null&&p.prev>0){const d=Math.abs(p.prev-r.qty)/Math.max(p.prev,r.qty);if(d<.6)b+=.15*(1-d/.6)}
     if(zq(p.id,z)==null)b+=.02;
     return b};
   pool=pool.map(x=>Object.assign({},x,{c:ctx(x)})).sort((a,b)=>b.c-a.c);
@@ -1181,14 +1182,15 @@ function renderList(flash){
     let diff="";if(t!=null&&p.prev!=null){const d=round(t-p.prev);if(d)diff=` <span class="diff ${d>0?"up":"down"}">${d>0?"+":""}${fmt(d)}</span>`}
     const zb=ks.length?`<div class="zb">${ks.map(z=>`<span class="${z===cz?"here":""}">${esc(zName(z))} ${fmt(m[z])}</span>`).join("")}</div>`:"";
     return `<div class="item" data-id="${esc(p.id)}"><div class="pos">${i+1}</div>
-      <div class="nm" data-open><b>${esc(p.name)}</b><small>${esc(p.code)} · ${esc(p.unit)}</small>${zb}</div>
+      <div class="nm" data-open><b>${esc(p.name)}</b><small>${esc(p.code)} · ${esc(p.unit)}${p.prev!=null?` · anterior ${fmt(p.prev)}`:""}${diff}</small>${zb}</div>
       <div class="qty"><button data-a="-" aria-label="Restar 1 en la zona actual">−</button><span class="tot${t==null?" none":""}">${t==null?"–":fmt(t)}</span><button data-a="+" aria-label="Sumar 1 en la zona actual">+</button></div></div>`;
   }).join(""):`<div class="empty">${filter==="zone"?"Todavía no hay nada contado en esta zona.":filter==="done"?"Todavía no has contado nada.":"No hay artículos que coincidan."}</div>`;
   if(flash&&view==="lista"){const el=$("list").querySelector(`[data-id="${CSS.escape(flash)}"]`);if(el){el.classList.add("flash")}}
 }
 function renderReview(){
   const ds=L.log.filter(e=>e.dud&&byId(e.pid));
-  $("revPanel").hidden=true;$("revBadge").hidden=true;
+  $("revPanel").hidden=!ds.length;$("revN").textContent=ds.length||"";
+  $("revBadge").hidden=!ds.length;$("revBadge").textContent=ds.length;
   $("revList").innerHTML=ds.map(e=>`<div class="rev" data-t="${e.t}"><div class="rt"><b>${esc(byId(e.pid).name)}</b><small>${esc(zName(e.zone))} · ${fmt(e.qty)} · has dicho «${esc(e.src)}»</small></div>
     <div class="links"><button class="btn sm ok" data-okr>✓ Bien</button>${(e.alts||[]).filter(id=>byId(id)).slice(0,3).map(id=>`<button class="altc" data-swr="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div></div>`).join("");
 }
@@ -1431,12 +1433,12 @@ $("xlsBtn").onclick=async()=>{
     const today=new Date();today.setHours(0,0,0,0);
     const main=[[L.name],[today]].concat(L.items.map(p=>[/^\d+$/.test(p.code)?Number(p.code):p.code,p.name,total(p.id)==null?null:total(p.id),p.unit]));
     const zs=usedZones();
-    const det=[["Código","Artículo","Unidad"].concat(zs.map(zName),["Total"])].concat(L.items.map(p=>{const t=total(p.id);
-      return [p.code,p.name,p.unit].concat(zs.map(z=>zq(p.id,z)),[t])}));
+    const det=[["Código","Artículo","Unidad"].concat(zs.map(zName),["Total","Anterior"+(L.date?" ("+L.date+")":""),"Diferencia"])].concat(L.items.map(p=>{const t=total(p.id);
+      return [p.code,p.name,p.unit].concat(zs.map(z=>zq(p.id,z)),[t,p.prev,t!=null&&p.prev!=null?round(t-p.prev):null])}));
     const wb=X.utils.book_new();
     const ws=X.utils.aoa_to_sheet(main,{cellDates:true});ws["!cols"]=[{wch:9},{wch:34},{wch:9},{wch:5}];if(ws.A2)ws.A2.z="dd/mm/yyyy";
     X.utils.book_append_sheet(wb,ws,"Inventario");
-    const ws2=X.utils.aoa_to_sheet(det);ws2["!cols"]=[{wch:9},{wch:34},{wch:6}].concat(zs.map(()=>({wch:12})),[{wch:8}]);
+    const ws2=X.utils.aoa_to_sheet(det);ws2["!cols"]=[{wch:9},{wch:34},{wch:6}].concat(zs.map(()=>({wch:12})),[{wch:8},{wch:12},{wch:10}]);
     X.utils.book_append_sheet(wb,ws2,"Por zonas");
     const buf=X.write(wb,{type:"array",bookType:"xlsx"});
     const d=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
