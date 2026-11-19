@@ -111,6 +111,18 @@ select.lnk{width:auto;text-decoration:none;border:1px solid var(--line);backgrou
 .rev{padding:10px 0;border-top:1px solid var(--line)}
 .rev .rt b{display:block}.rev .rt small{color:var(--muted)}
 .rev .links{margin-top:6px;gap:6px}
+.panel.danger{border-color:#F3C5BE}
+.btn.delbtn{color:var(--bad);border-color:#F3C5BE}
+.btn.delbtn.solid{background:var(--bad);color:#fff;border-color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.aliases{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.aliases span{background:var(--bg);border-radius:999px;padding:5px 6px 5px 11px;font-size:14px;display:inline-flex;align-items:center;gap:4px}
+.aliases button{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 4px}
+.teach{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.pend.wait{background:#EEF4FB;border-color:#C9DAEE}
+.pend.wait.stale{background:var(--warn-soft);border-color:#F1DDA8}
+#heldBox{background:var(--board);color:var(--amber);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;font-family:var(--cond);font-size:20px;font-weight:600}
+.brand small.net{color:var(--amber)}
 /* list */
 .tools{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
 .item{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
@@ -208,7 +220,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
     <div class="logo" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1C2633" stroke-width="2.4" stroke-linecap="round"><path d="M6 5v14M10 5v14M14 5v14M18 5v14"/><path d="M3.5 16.5 20.5 7.5"/></svg>
     </div>
-    <div class="brand"><b>Recuento</b><small id="companyLbl">Inventario por voz</small></div>
+    <div class="brand"><b>Recuento</b><small id="companyLbl">Inventario por voz</small><small id="netLbl" class="net" hidden>Sin cobertura · todo se guarda en el móvil</small></div>
     <button class="localBtn" id="localBtn" aria-label="Cambiar de local">
       <span><b id="localName">—</b><small id="localDate"></small></span>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9FB0C3" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
@@ -253,6 +265,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
       </div>
     </div>
 
+    <div id="heldBox" hidden></div>
     <div id="pendList"></div>
     <div id="lastBox"></div>
 
@@ -263,6 +276,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
           <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>. Una zona nueva se crea sola.</li>
           <li>Artículo y cantidad, en cualquier orden y con el nombre aproximado: <q>doce leche</q>, <q>bitel 74</q>, <q>vaso de ocho onzas 800</q>. Nunca te para a preguntar: si duda, lo deja en «Para revisar».</li>
           <li>Decimales: <q>cuatro coma cinco</q>, <q>dos y medio</q>.</li>
+          <li>Con pausa para contar, el tiempo que necesites: <q>leche</q> … <q>doce</q>. Si cuentas en voz alta (<q>uno, dos, tres… doce</q>) se queda con el último número.</li>
           <li>Varios seguidos sin parar: <q>leche doce, bitel setenta y cuatro, kas limón veintidós</q>.</li>
           <li>Si se equivoca, corrígelo al momento: <q>no</q> (pasa a la siguiente opción), <q>no, la veri pequeña</q>, <q>no, quince</q> (cambia la cantidad).</li>
           <li>Preguntas: <q>¿cuánto hay en la barra?</q>, <q>¿cuánta leche hay?</q>, <q>resumen general</q>.</li>
@@ -318,7 +332,12 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
     </div>
     <div class="panel">
       <label class="field"><span>Responsable del recuento</span><input id="resp" placeholder="Nombre"></label>
-      <button class="btn full" id="resetBtn">Empezar un recuento nuevo en este local</button>
+      <button class="btn full" id="restoreBtn" hidden></button>
+    </div>
+    <div class="panel danger">
+      <b>Borrar el inventario completo</b>
+      <p class="hint" style="margin:4px 0 10px">Pone a cero todas las cantidades de todas las zonas de este local, con su historial. La lista de artículos, las zonas y lo aprendido se mantienen.</p>
+      <button class="btn full delbtn" id="resetBtn">Borrar inventario completo</button>
     </div>
   </section>
 </main>
@@ -376,9 +395,22 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
   <div class="acts"><button class="btn" id="txtCancel">Cancelar</button><button class="btn amber" id="txtSave">Guardar</button></div>
 </div></div>
 
+<div class="sheetBg" id="wipeSheet"><div class="sheet">
+  <h3>¿Borrar el inventario completo?</h3>
+  <p id="wipeInfo"></p>
+  <label class="field"><span>Para confirmar, escribe <b>BORRAR</b></span><input id="wipeTxt" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+  <div class="acts"><button class="btn" id="wipeNo">Cancelar</button><button class="btn delbtn solid" id="wipeYes" disabled>Borrar todo</button></div>
+</div></div>
+
 <div class="sheetBg" id="pzSheet"><div class="sheet">
   <h3 id="pzTitle"></h3><p>Cantidad en cada zona. El total es la suma.</p>
   <div id="pzList"></div>
+  <div class="teach">
+    <b>Cómo lo dices</b>
+    <p class="hint" style="margin:2px 0 0">Si la app no lo reconoce bien, pulsa «Enséñale» y di el nombre como lo dices tú. Guarda lo que entiende el móvil.</p>
+    <div class="aliases" id="pzAliases"></div>
+    <div class="actions"><button class="btn dark" id="teachBtn">🎤 Enséñale</button><input id="aliasTxt" placeholder="o escríbelo aquí"></div>
+  </div>
   <div class="acts"><button class="btn" id="pzCancel">Cancelar</button><button class="btn amber" id="pzSave">Guardar</button></div>
 </div></div>
 
@@ -411,24 +443,24 @@ const DEFAULT_ROWS=[
 ["191709","AGUA C/GAS S.PELLE 24*50CL PET","GF",40,"agua con gas san pellegrino","san pellegrino|pellegrino|agua con gas|san pelegrino"],
 ["191563","AGUA VERI PET (12*1,5L) CX","UN",8,"agua veri litro y medio","veri grande|agua veri grande|veri 1,5|veri de litro y medio|agua grande"],
 ["191559","AGUA VERI PET 24*50CL CX","UN",119,"agua veri 50 cl","veri pequeña|agua veri pequeña|veri 50|agua pequeña|veri medio litro"],
-["191706","AGUA VITTEL PET 15*75CL  CX","GF",74,"agua vittel","vittel|bitel|vitel"],
+["191706","AGUA VITTEL PET 15*75CL  CX","GF",74,"agua vittel","vittel|bitel|vitel|vital|vidal|bidel|agua vital"],
 ["190427","AZUCAR MORENO ST (1500*5GR) CX","UN",1500,"azúcar moreno","moreno|azucar moreno stick|sobres moreno"],
 ["190347","AZUCAR STICK (2000*6GR) CX","UN",1920,"azúcar blanco","azucar|azucar stick|azucar normal|sobres de azucar"],
 ["182762","BETTER ARÁNDANOS (15U*35GR)CX","UN",9,"better arándanos","barrita arandanos|beter arandanos"],
 ["182763","BETTER CACAHUETE (15U*35GR)CX","UN",15,"better cacahuete","barrita cacahuete|beter cacahuete"],
 ["182535","BOLSA ASA TRAVEL (300U)CX","UN",285,"bolsa de asa","bolsa asa|bolsa travel|bolsas de asa|bolsa grande"],
 ["190451","BOLSA BOLLERIA KRAFT CJX1000UN","UN",600,"bolsa bollería","bolsa kraft|bolsa de papel|bolsitas|bolsa pequeña"],
-["192397","BOTELLIN ANNA CODORNIU 24*20CL","UN",24,"anna de codorníu","codorniu|cava|botellin de cava|ana codorniu"],
+["192397","BOTELLIN ANNA CODORNIU 24*20CL","UN",24,"anna de codorníu","codorniu|cava|botellin de cava|ana codorniu|ana de codorniu|codorni"],
 ["198303","CAFE GR. DES. BRASILIA 10*0,5K","KG",9,"café descafeinado","descafeinado|deca|cafe descafeinado en grano"],
 ["191929","CAFE GRANO BRASILIA 10*1KG","KG",6,"café en grano","cafe|cafe grano|cafe brasilia|cafe normal"],
 ["191981","CASTA ROSADO 24*18,7CL","UN",24,"casta rosado","rosado|vino rosado|benjamin rosado"],
 ["192738","CERV DAMM FREE TOST RET 24*33C","UN",24,"free damm tostada","damm free tostada|sin alcohol tostada|free tostada|tostada"],
 ["191481","CERV DAMM LATA 24*50CL","UN",23,"damm lata","lata de damm|estrella lata|lata de cerveza|lata damm 50"],
 ["191498","CERV DAMM LEMON N/RET. 24*33CL","UN",22,"damm lemon","lemon|cerveza limon|damm limon"],
-["194516","CERV DAURA RETOR. 24*33CL","UN",24,"daura","daura damm|cerveza sin gluten|dora"],
-["191489","CERV VOLL DAMM N/RET. 24*33CL","UN",24,"voll damm","voldam|bol dam|voll"],
+["194516","CERV DAURA RETOR. 24*33CL","UN",24,"daura","daura damm|cerveza sin gluten|dora|aura|laura damm"],
+["191489","CERV VOLL DAMM N/RET. 24*33CL","UN",24,"voll damm","voldam|bol dam|voll|vol dam|voldan|bol damm|boldam"],
 ["191503","CERV. E. DAMM TP 24*33CL","UN",20,"estrella damm","estrella|estrella botella|cerveza|botellin estrella"],
-["198326","CHAI LATTE KISSA(4UNX120GR) CX","UN",3.8,"chai latte","chai|kissa|chai kissa"],
+["198326","CHAI LATTE KISSA(4UNX120GR) CX","UN",3.8,"chai latte","chai|kissa|chai kissa|chay|chai late|kisa"],
 ["199385","CHIPS VEGETALES 10*70GR CX","UN",7,"chips vegetales","chips|patatas vegetales"],
 ["192338","CHOCOLATE A LA TAZA (6*1LT)CX","UN",5,"chocolate a la taza","chocolate liquido|chocolate brik|chocolate taza"],
 ["182866","CHOCOLATE POLVO TRAVEL (9*1KG)","KG",9,"chocolate en polvo","cacao|cacao en polvo|chocolate polvo"],
@@ -439,8 +471,8 @@ const DEFAULT_ROWS=[
 ["182723","HONESTLY PISTACHO(24UN*30GR)CX","UN",24,"honestly pistacho","onestly pistacho|pistacho"],
 ["191399","KAS LIMON PET (12UN*50CL)","UN",22,"kas limón","cas limon|kas de limon"],
 ["193575","KAS NARANJA PET (12UN*50CL)","UN",23,"kas naranja","cas naranja|kas de naranja"],
-["197919","KIT KAT 4 FINGER (36*41.5G) CX","UN",25,"kit kat","kitkat|kit cat|quit cat"],
-["194046","LAYS GOURMET (84UN*45GR) CX","UN",75,"lays gourmet","lays|patatas lays|leis|patatas fritas"],
+["197919","KIT KAT 4 FINGER (36*41.5G) CX","UN",25,"kit kat","kitkat|kit cat|quit cat|kitcat|quitcat"],
+["194046","LAYS GOURMET (84UN*45GR) CX","UN",75,"lays gourmet","lays|patatas lays|leis|lei|patatas fritas|leys"],
 ["197033","LECHE HOSTE AEROPUERTOS 8*1,5L","LT",4.5,"leche","leche entera|leche normal|leche hoste|leche de vaca"],
 ["192158","LECHE SIN/LACT. HOST EDGE 6UN","LT",2,"leche sin lactosa","sin lactosa|lactosa"],
 ["199126","LIPTON LIMÓN FREE PET(12*50CL)","UN",45,"lipton limón","lipton|ice tea|te frio|liptón"],
@@ -449,7 +481,7 @@ const DEFAULT_ROWS=[
 ["198772","MOMENT TEA TÉ VERD (25X1,8G)CX","UN",25,"té verde","moment tea|te verde moment"],
 ["199440","MONOD. VINAGRE (250UN*10ML)CX","UN",250,"monodosis vinagre","vinagre|vinagres"],
 ["199439","MONODOSIS ACEITE (250UN*8ML)CX","UN",250,"monodosis aceite","aceite|aceites"],
-["182786","NATWINS COOKIE YO/FR/CH 21*50G","PK",16,"natwins cookie","natwins|galletas|cookie|galleta"],
+["182786","NATWINS COOKIE YO/FR/CH 21*50G","PK",16,"natwins cookie","natwins|galletas|cookie|galleta|nat wins|natwin|nawins|cuki"],
 ["198557","PACK CUCHI+TENED MADERACX750U","UN",650,"pack cuchillo y tenedor","cubiertos|pack cubiertos|cuchillo tenedor|cuchillos"],
 ["191397","PEPSI MAX PET (12UN*50CL)","UN",46,"pepsi max","pepsi zero|pepsi cero|pepsimax"],
 ["191395","PEPSI REGULAR PET (12UN*50CL)","UN",36,"pepsi regular","pepsi|pepsi normal"],
@@ -460,7 +492,7 @@ const DEFAULT_ROWS=[
 ["190298","SERVILLETA 30X30 A (CJX6750UN)","UN",5000,"servilleta","servilletas"],
 ["197262","TAPA VASO NEG 12-16OZ 1000UN","UN",950,"tapa vaso 12 oz","tapa grande|tapa 12|tapa 16|tapas grandes|tapa vaso grande|tapa 12 16"],
 ["197261","TAPA VASO NEGRA 8OZ 1000UN","UN",990,"tapa vaso 8 oz","tapa pequeña|tapa 8|tapas pequeñas|tapa vaso pequeño"],
-["199705","TE MATCHA AIYA (500GR) UN","KG",0.85,"té matcha","matcha|aiya|macha"],
+["199705","TE MATCHA AIYA (500GR) UN","KG",0.85,"té matcha","matcha|aiya|macha|maccha|te macha"],
 ["190537","TE NEGRO 1.8GR(1X100UN)CX","UN",86,"té negro","te|te normal"],
 ["182678","TRUE GUMS FRAMBUESA(24U*21G)CX","UN",18,"true gums frambuesa","chicles frambuesa|chicle frambuesa|tru gums frambuesa"],
 ["182677","TRUE GUMS LIMON (24U*21G)CX","UN",24,"true gums limón","chicles limon|chicle limon|tru gums limon"],
@@ -473,7 +505,7 @@ const DEFAULT_ROWS=[
 ["191980","VIÑASOL ORIGINAL 24*18,7CL","GF",23,"viña sol","vinasol|vino blanco|blanco|benjamin blanco"],
 ["183449","VIVESOY BARISTA AVENA (CJ6*1L)","LT",2,"vivesoy avena","avena|leche de avena|bebida de avena|bebida avena"],
 ["195569","VIVESOY BARISTA SOJA (CJ6*1L)","LT",3,"vivesoy soja","soja|leche de soja|bebida de soja"],
-["199136","7UP FREE PET (12UN*50CL)","UN",18,"seven up","7up|7 up|seven|sevenup"]
+["199136","7UP FREE PET (12UN*50CL)","UN",18,"seven up","7up|7 up|seven|sevenup|seven ap|sevenap|seven app"]
 ];
 
 /* ---------- normalisation ---------- */
@@ -523,13 +555,18 @@ function numberRuns(tk){
         if(/^\d{1,3}\.\d{3}$/.test(t))val=parseFloat(t.replace(".",""));
         if(tk[i]==="mil"){val*=1000;i++}
       }else{
+        // "uno dos tres" are three numbers, "ciento veinte" or "dos mil" is one
+        let last="";
+        const ok={"":"UTHM",U:"M",T:"M",H:"UTM",M:"UTH"};
         while(i<tk.length){
           const w=tk[i];
-          if(w in U){cur+=U[w];i++}
-          else if(w in T){cur+=T[w];i++;if(tk[i]==="y"&&tk[i+1] in U&&U[tk[i+1]]<10)i++}
-          else if(w in H){cur+=H[w];i++}
-          else if(w==="mil"){val+=(cur||1)*1000;cur=0;i++}
-          else break;
+          const ty=w in U?"U":w in T?"T":w in H?"H":w==="mil"?"M":"";
+          if(!ty||!ok[last].includes(ty))break;
+          if(ty==="U"){cur+=U[w];i++}
+          else if(ty==="T"){cur+=T[w];i++;if(tk[i]==="y"&&tk[i+1] in U&&U[tk[i+1]]<10){cur+=U[tk[i+1]];i+=2}}
+          else if(ty==="H"){cur+=H[w];i++}
+          else{val+=(cur||1)*1000;cur=0;i++}
+          last=ty;
         }
         val+=cur;
       }
@@ -619,6 +656,8 @@ function parsePhrase(cat,raw){
     return toks(out.join(" "));
   };
   if(!runs.length){const q=restFor(null);return {raw,qty:null,query:q.join(" "),mode,cands:rank(cat,q)}}
+  // only numbers ("uno dos tres cuatro" when counting aloud): keep the last one
+  if(tk.every((t,i)=>runs.some(r=>i>=r.start&&i<=r.end)||STOP.has(t)||t==="y"))return {raw,qty:runs[runs.length-1].value,query:"",mode,cands:[]};
   let best=null;
   runs.forEach(r=>{
     const rest=restFor(r);const rk=rank(cat,rest);const top=rk[0]?rk[0].s:0;
@@ -799,13 +838,14 @@ function applyCount(pid,qty,mode,src,meta){
   const z=curZone(),prev=zq(pid,z),m=mode||S.mode;
   const next=(m==="add"&&prev!=null)?round(prev+qty):qty;
   setZq(pid,z,next);
-  const e={t:Date.now(),pid,zone:z,prev,next,qty,mode:m,src:src||"",alts:meta.alts||[],query:meta.query||"",dud:!!meta.dud,tag:meta.tag||null};
+  const e={t:Date.now(),pid,zone:z,prev,next,qty,mode:m,src:src||"",alts:meta.alts||[],query:meta.query||"",dud:!!meta.dud,tag:meta.tag||null,byNumber:!!meta.byNumber};
   L.log.unshift(e);if(L.log.length>800)L.log.length=800;
   save();
   const p=byId(pid),tot=total(pid),multi=Object.keys(L.counts[pid]||{}).length>1;
   lastAct={pid,z,prev,qty,next,tot,multi,m,e};
   renderAll(pid);
   const say=`${meta.fixed?"Vale, ":""}${spokenName(p)}, ${fmt(next)}${multi&&!meta.fixed?`. Total ${fmt(tot)}`:""}`;
+  if(meta.quiet){$("pkLast").textContent=`${label(p)}: ${fmt(next)}`;vib(1);return}
   feedback(say,`${meta.dud?"¿":""}${label(p)}: ${fmt(next)}${meta.dud?"?":""}${multi?` (total ${fmt(tot)})`:""}`,meta.dud?2:1,meta.dud||meta.fixed);
 }
 // take an entry back out of the counts, even if later entries touched the same article
@@ -896,7 +936,7 @@ function askAloud(o){
   if(!locked||!o)return;
   const n=id=>spokenName(byId(id));
   let t;
-  if(!S.ask&&o.qty==null&&o.opts.length){feedback(`${n(o.opts[0])}, ¿cuántos?`,`${label(byId(o.opts[0]))}: ¿cantidad?`,3,true);return}
+  if(!S.ask&&o.qty==null&&o.opts.length){feedback(`${n(o.opts[0])}`,`${label(byId(o.opts[0]))} … esperando la cantidad`,1,false);return}
   if(!S.ask&&o.kind==="unknown"){feedback(`No te he entendido`,`No entendido: «${o.raw}»`,3,true);return}
   if(o.kind==="confirm")t=`¿Es ${n(o.opts[0])}? Sí o no.`;
   else if(o.kind==="choose")t="¿Cuál? "+o.opts.map((id,k)=>`${["uno","dos","tres","cuatro"][k]}, ${n(id)}`).join(". ")+".";
@@ -906,7 +946,8 @@ function askAloud(o){
 }
 
 /* ================= understanding what was said ================= */
-let lastHeard={t:"",at:0};
+let lastHeard={t:"",at:0},heldQty=null;
+function renderHeld(){const el=$("heldBox");if(!el)return;el.hidden=!heldQty;if(heldQty)el.textContent=`Tengo ${fmt(heldQty.q)}… di el artículo`}
 function handleText(text,fromVoice,tag){
   if(fromVoice){
     if(isEcho(text))return;
@@ -939,12 +980,25 @@ function handleText(text,fromVoice,tag){
         continue}
       if(r.cmd==="no"){if(first&&S.ask)rejectFirst(first);else correctLast("");continue}
       if(r.cmd==="pick"){if(first&&first.opts[r.n-1])resolvePending(first,first.opts[r.n-1]);continue}
-      // a bare number after "¿cuántos?" fills the quantity
-      if(first&&first.qty==null&&r.qty!=null&&!r.query){if(first.opts.length&&(!S.ask||first.kind==="confirm"&&!first.asked)){const pd=first;L.pending=L.pending.filter(x=>x!==pd);
-          // now that the quantity is known, pick again with it (it helps tell variants apart)
-          const r2=parsePhrase(L.items,pd.raw+" "+String(r.qty));const ch=!S.ask&&r2&&!r2.cmd?chooseSmart(r2):null;
-          if(ch)applyCount(ch.pick,r.qty,pd.mode,pd.raw+" "+fmt(r.qty),{alts:ch.alts,query:pd.query,dud:ch.dud,tag});
-          else applyCount(pd.opts[0],r.qty,pd.mode,pd.raw+" "+fmt(r.qty),{alts:pd.opts.slice(1),query:pd.query,tag})}else{first.qty=r.qty;save();renderPending()}continue}
+      const bare=!r.cmd&&r.qty!=null&&!r.query;
+      const waiting=first&&first.qty==null&&!first.stale&&first.opts.length?first:null;
+      // 1) article said before, number now (after any pause): fill it
+      if(bare&&waiting&&(!S.ask||first.kind==="confirm")){
+        const pd=waiting;L.pending=L.pending.filter(x=>x!==pd);heldQty=null;
+        // now that the quantity is known, pick again with it (it helps tell variants apart)
+        const r2=parsePhrase(L.items,pd.raw+" "+String(r.qty));const ch=r2&&!r2.cmd?chooseSmart(r2):null;
+        if(ch&&!S.ask)applyCount(ch.pick,r.qty,pd.mode,pd.raw+" … "+fmt(r.qty),{alts:ch.alts,query:pd.query,dud:ch.dud,tag,byNumber:true});
+        else applyCount(pd.opts[0],r.qty,pd.mode,pd.raw+" … "+fmt(r.qty),{alts:pd.opts.slice(1),query:pd.query,tag,byNumber:true});
+        continue}
+      if(bare&&first&&first.qty==null&&S.ask){first.qty=r.qty;save();renderPending();continue}
+      // 2) counting aloud "uno, dos, tres… doce": a higher number right after replaces the last one
+      const le=L.log[0];
+      if(bare&&!S.ask&&le&&le.byNumber&&Date.now()-le.t<7000&&r.qty>le.qty&&!(first&&first.opts&&first.kind!=="unknown"&&first.qty!=null)){
+        const wasZone=L.zone;L.zone=le.zone===NOZONE?null:le.zone;revertEntry(le);
+        applyCount(le.pid,r.qty,le.mode,le.src.replace(/ … .*$/,"")+" … "+fmt(r.qty),{alts:le.alts,query:le.query,dud:le.dud,tag,byNumber:true,quiet:true});
+        L.zone=wasZone;save();continue}
+      // 3) number first, article later: hold the number for a few seconds
+      if(bare&&!S.ask&&!(first&&first.qty!=null&&first.kind!=="unknown")){heldQty={q:r.qty,t:Date.now(),raw:ph};feedback(`${fmt(r.qty)}, ¿de qué?`,`${fmt(r.qty)} … ¿de qué artículo?`,1,false);renderHeld();continue}
       if(S.ask){
         if(first&&first.qty!=null&&r.qty!=null&&!r.query&&Number.isInteger(r.qty)&&r.qty>=1&&r.qty<=first.opts.length){resolvePending(first,first.opts[r.qty-1]);continue}
         const d=decide(r.cands);
@@ -955,7 +1009,14 @@ function handleText(text,fromVoice,tag){
       // fast mode: never stop to ask, take the best guess and let the user correct it
       const ch=chooseSmart(r);
       if(!ch){addPending({raw:ph,qty:r.qty,query:r.query,mode:r.mode,kind:"unknown",opts:(r.cands||[]).filter(x=>x.s>.3).slice(0,3).map(x=>x.p.id),tag});continue}
-      if(r.qty==null){addPending({raw:ph,qty:null,query:r.query,mode:r.mode,kind:"confirm",opts:[ch.pick].concat(ch.alts),tag});continue}
+      // any earlier article still waiting for its number stops waiting (it stays in the list to fill by hand)
+      L.pending.forEach(x=>{if(x.qty==null)x.stale=true});
+      if(r.qty==null){
+        if(heldQty&&Date.now()-heldQty.t<12000){const q=heldQty.q,hr=heldQty.raw;heldQty=null;renderHeld();
+          const r2=parsePhrase(L.items,ph+" "+String(q));const ch2=r2&&!r2.cmd?chooseSmart(r2):ch;
+          applyCount(ch2.pick,q,r.mode,hr+" … "+ph,{alts:ch2.alts,query:r.query,dud:ch2.dud,tag});continue}
+        addPending({raw:ph,qty:null,query:r.query,mode:r.mode,kind:"confirm",opts:[ch.pick].concat(ch.alts),tag});continue}
+      heldQty=null;renderHeld();
       applyCount(ch.pick,r.qty,r.mode,ph,{alts:ch.alts,query:r.query,dud:ch.dud,tag});
     }
   }
@@ -969,7 +1030,7 @@ function confident(text){
 
 /* ================= rendering ================= */
 let view="contar",filter="all",sumZone="__all",lastAnswer="";
-function renderAll(flash){renderBoard();renderZones();renderLast();renderPending();renderList(flash);if(view==="resumen")showSummary(sumZone,false);renderLog()}
+function renderAll(flash){renderBoard();renderZones();renderLast();renderPending();renderList(flash);if(view==="resumen")showSummary(sumZone,false);renderLog();renderRestore()}
 let lastFlap="";
 function renderBoard(){
   $("localName").textContent=L.name;$("localDate").textContent=L.date?("Inventario "+L.date):"";
@@ -1003,6 +1064,11 @@ function renderPending(){
     const links=`<div class="links">${sel}${pd.query?`<button class="lnk" data-new>Crear «${esc(pd.query)}»</button>`:""}<button class="lnk" data-drop>Descartar</button></div>`;
     const optList=ids=>`<div class="opts">${ids.map((id,k)=>{const x=byId(id);return x?`<button class="opt" data-pick="${esc(id)}"><span class="k">${k+1}</span><span>${esc(x.name)}</span></button>`:""}).join("")}</div>`;
     let body;
+    if(!S.ask&&pd.kind==="confirm"&&pd.qty==null){const p=byId(pd.opts[0]);
+      body=`<div class="q">${esc(p?p.name:"?")}<small>${pd.stale?"Se quedó sin cantidad: escríbela o descártalo":"Esperando la cantidad: dila cuando la tengas, sin prisa"}</small></div>
+      <div class="actions" style="margin-bottom:8px"><input class="pq" inputmode="decimal" placeholder="Cantidad"><button class="btn amber" data-pick="${esc(pd.opts[0])}">Apuntar</button></div>
+      ${pd.opts.length>1?`<div class="alts" style="margin:0 0 6px"><span>¿Era otro?</span>${pd.opts.slice(1,4).map(id=>`<button class="altc" data-pick="${esc(id)}">${esc(label(byId(id)))}</button>`).join("")}</div>`:""}${links}`;
+      return `<div class="pend wait${pd.stale?" stale":""}" data-pid="${pd.id}"><div class="said">Has dicho «${esc(pd.raw)}»</div>${body}</div>`}
     if(pd.kind==="confirm"){const p=byId(pd.opts[0]);
       body=`<div class="q">¿Es ${esc(p?p.name:"?")}?<small>${esc(p?p.code:"")} ${qtyTxt?"· "+qtyTxt:""}</small></div>${qtyIn}
       <div class="yn"><button class="btn ok" data-pick="${esc(pd.opts[0])}">Sí</button><button class="btn" data-no>No</button></div>${pd.opts.length>1?optList(pd.opts.slice(1)):""}${links}`}
@@ -1084,7 +1150,7 @@ function answerProd(ids,z){
 function go(v){
   view=v;document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));
   document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));
-  if(v==="lista")renderList();if(v==="resumen"&&!$("sumList").innerHTML)showSummary(sumZone,false);
+  if(v==="lista")renderList();if(v==="exportar")renderRestore();if(v==="resumen"&&!$("sumList").innerHTML)showSummary(sumZone,false);
   window.scrollTo({top:0});
 }
 $("tabbar").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.v==="resumen")showSummary(L.zone||"__all",false);go(b.dataset.v)});
@@ -1099,7 +1165,7 @@ function confirmBox(t,x,yes){$("cfmTitle").textContent=t;$("cfmText").textConten
 $("cfmNo").onclick=()=>closeS("cfmSheet");
 
 $("kbBtn").onclick=()=>{const f=$("form");f.hidden=!f.hidden;if(!f.hidden)$("txt").focus()};
-$("form").addEventListener("submit",e=>{e.preventDefault();const v=$("txt").value.trim();if(v){handleText(v);$("txt").value=""}});
+$("form").addEventListener("submit",e=>{e.preventDefault();const v=$("txt").value.trim();if(v){handleText(v);$("txt").value="";$("txt").focus()}});
 $("mode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.mode=b.dataset.m;save();[...$("mode").children].forEach(x=>x.classList.toggle("act",x===b))});
 $("askSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.ask=b.dataset.a==="1";save();[...$("askSeg").children].forEach(x=>x.classList.toggle("act",x===b))});
 $("fbSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;S.fb=b.dataset.f;save();[...$("fbSeg").children].forEach(x=>x.classList.toggle("act",x===b))});
@@ -1143,8 +1209,30 @@ function openPz(pid){
   pzId=pid;const p=byId(pid);$("pzTitle").textContent=p.name;
   const ids=L.zones.map(z=>z.id).concat(zq(pid,NOZONE)!=null?[NOZONE]:[]);
   $("pzList").innerHTML=ids.map(z=>`<div class="zrow"><label>${esc(zName(z))}${z===L.zone?" · ahora":""}</label><input inputmode="decimal" data-z="${esc(z)}" value="${fmt(zq(pid,z))}" placeholder="–"></div>`).join("")+`<div class="zrow"><label><b>Total</b></label><b class="tot">${fmt(total(pid))||"–"}</b></div>`;
-  openS("pzSheet");
+  renderAliases();openS("pzSheet");
 }
+function renderAliases(){
+  const p=byId(pzId);if(!p)return;
+  const all=[p.spoken].concat(p.alias||[],p.learned||[]).filter(Boolean);
+  $("pzAliases").innerHTML=[...new Set(all)].map(a=>`<span>${esc(a)}${a!==p.spoken?`<button data-rm="${esc(a)}" aria-label="Quitar">×</button>`:""}</span>`).join("");
+}
+function addAlias(p,txt){
+  const t=norm(txt).replace(/\b\d+([.,]\d+)?\b/g," ").replace(/\s+/g," ").trim();if(!t||!p)return false;
+  p.alias=[...new Set((p.alias||[]).concat(t))];
+  if(p.code)S.lex[p.code]=Object.assign(S.lex[p.code]||{spoken:p.spoken},{alias:p.alias,learned:p.learned||[]});
+  buildIndex(L.items);save();renderAliases();return true;
+}
+$("pzAliases").addEventListener("click",e=>{const b=e.target.closest("[data-rm]");if(!b)return;const p=byId(pzId),a=b.dataset.rm;
+  p.alias=(p.alias||[]).filter(x=>x!==a);p.learned=(p.learned||[]).filter(x=>x!==a);
+  if(p.code)S.lex[p.code]=Object.assign(S.lex[p.code]||{},{spoken:p.spoken,alias:p.alias,learned:p.learned});buildIndex(L.items);save();renderAliases()});
+$("aliasTxt").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();if(addAlias(byId(pzId),e.target.value)){e.target.value="";toast("Guardado")}}});
+let teaching=null;
+$("teachBtn").onclick=()=>{
+  if(!dict&&!SR){$("aliasTxt").focus();toast("Aquí no hay micrófono: escríbelo");return}
+  teaching=pzId;$("teachBtn").textContent="Escuchando… di el nombre";
+  if(!isActive())startListening().catch(startErr);
+  setTimeout(()=>{if(teaching){teaching=null;$("teachBtn").textContent="🎤 Enséñale"}},8000);
+};
 $("pzCancel").onclick=()=>closeS("pzSheet");
 $("pzSave").onclick=()=>{
   $("pzList").querySelectorAll("input[data-z]").forEach(i=>{const z=i.dataset.z,raw=i.value.trim().replace(",","."),prev=zq(pzId,z);const v=raw===""?null:parseFloat(raw);
@@ -1277,26 +1365,66 @@ $("pcBtn").onclick=()=>{L.typed=L.typed||{};renderPc();openS("pcSheet")};
 $("pcTable").addEventListener("click",e=>{const r=e.target.closest("tr");if(!r)return;const id=r.dataset.id;if(L.typed[id])delete L.typed[id];else L.typed[id]=1;save();renderPc()});
 $("pcReset").onclick=()=>{L.typed={};save();renderPc()};
 $("pcClose").onclick=()=>closeS("pcSheet");
-$("resetBtn").onclick=()=>confirmBox("¿Empezar un recuento nuevo?",`Se borran las cantidades, el historial y lo pendiente de ${L.name}. La lista de artículos, las zonas y lo aprendido se mantienen.`,()=>{L.counts={};L.log=[];L.pending=[];L.typed={};L.zone=null;lastAct=null;save();renderAll();go("contar");toast("Recuento vacío")});
+$("resetBtn").onclick=()=>{
+  const n=counted();
+  $("wipeInfo").textContent=n?`Se borrarán ${n} artículos contados de ${L.name}, en todas las zonas. Si te equivocas, podrás recuperarlo desde esta misma pantalla.`:`${L.name} no tiene nada contado todavía.`;
+  $("wipeTxt").value="";$("wipeYes").disabled=true;openS("wipeSheet");setTimeout(()=>$("wipeTxt").focus(),50);
+};
+$("wipeTxt").addEventListener("input",()=>{$("wipeYes").disabled=$("wipeTxt").value.trim().toUpperCase()!=="BORRAR"});
+$("wipeNo").onclick=()=>closeS("wipeSheet");
+$("wipeYes").onclick=()=>{
+  if($("wipeTxt").value.trim().toUpperCase()!=="BORRAR")return;
+  L.backup={at:Date.now(),counts:L.counts,log:L.log,pending:L.pending,typed:L.typed,zone:L.zone};
+  L.counts={};L.log=[];L.pending=[];L.typed={};L.zone=null;lastAct=null;save();closeS("wipeSheet");renderAll();renderRestore();
+  toast("Inventario borrado");
+};
+function renderRestore(){
+  const b=L.backup,btn=$("restoreBtn");
+  if(!b){btn.hidden=true;return}
+  const n=Object.keys(b.counts||{}).length;
+  btn.hidden=false;btn.textContent=`Recuperar el inventario borrado (${n} artículos, ${new Date(b.at).toLocaleTimeString("es-ES",{hour:"2-digit",minute:"2-digit"})})`;
+}
+$("restoreBtn").onclick=()=>{const b=L.backup;if(!b)return;
+  confirmBox("¿Recuperar el inventario borrado?",counted()?"Se sustituirá lo que has contado desde que lo borraste.":"Volverán todas las cantidades tal como estaban.",()=>{
+    Object.assign(L,{counts:b.counts,log:b.log,pending:b.pending,typed:b.typed||{},zone:b.zone});delete L.backup;lastAct=null;save();renderAll();renderRestore();toast("Inventario recuperado")})};
 
 /* ================= microphone ================= */
 let dict=null,listening=false,locked=false,wakeLock=null,wsRec=null,wsActive=false;
 const mic=$("mic"),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
 function setMic(on){listening=on;mic.classList.toggle("on",on);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando…":"Pulsa y di: «leche doce»";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
 function noMic(){$("micState").innerHTML="El micrófono no está disponible aquí";$("live").innerHTML="Usa <b>Escribir</b> y el micro del teclado, o abre la app en Chrome (Android) o en tu enlace de Safari (iPhone).";$("lockBtn").disabled=true;$("lockBtn").style.opacity=.5;$("form").hidden=false}
-function onHeard(t,tag){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(t)handleText(t,true,tag)}
+function onHeard(t,tag){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(!t)return;
+  if(teaching){const p=byId(teaching);teaching=null;$("teachBtn").textContent="🎤 Enséñale";if(addAlias(p,t))toast(`Aprendido: «${t}»`);return}
+  handleText(t,true,tag)}
 let wsDone=new Set(),wsEarly={},wsTimer=null,wsSession=0;
+// Safari can return several guesses of the same phrase: score each against the article list
+function fitScore(text){
+  const n=norm(text);if(!n)return -1;
+  if(/^(no|si|vale|deshacer|el otro|la otra|otro|otra)\b/.test(n))return 2;
+  if(parseCommand(L.items,L.zones,text))return 1.5;
+  let tot=0,k=0;
+  for(const ph of text.split(/[;,.]+/).filter(s=>s.trim())){
+    for(const r of parseMulti(L.items,ph)){if(r.cmd){tot+=1;k++;continue}
+      const s=r.cands&&r.cands[0]?r.cands[0].s:0;tot+=s+(r.qty!=null?.15:0);k++}}
+  return k?tot/k:0;
+}
+function bestAlt(res){
+  if(!res||res.length<2)return res[0].transcript;
+  let best=res[0].transcript,bs=fitScore(best)+.05; // small bias to Safari's own first choice
+  for(let j=1;j<res.length;j++){const t=res[j].transcript,s=fitScore(t);if(s>bs){bs=s;best=t}}
+  return best;
+}
 function onPartialText(t){$("live").textContent=t?("… "+t):"";$("pkLive").textContent=t||""}
 function startWS(){
   if(!SR)return Promise.reject({code:"unavailable"});
   return new Promise((res,rej)=>{try{
-    wsRec=new SR();wsRec.lang="es-ES";wsRec.continuous=true;wsRec.interimResults=true;let started=false;
+    wsRec=new SR();wsRec.lang="es-ES";wsRec.continuous=true;wsRec.interimResults=true;try{wsRec.maxAlternatives=5}catch(e){}let started=false;
     wsRec.onstart=()=>{started=true;wsActive=true;wsDone=new Set();wsEarly={};wsSession++;setMic(true);res()};
     wsRec.onresult=e=>{
       // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
       let im="",lastIdx=-1;
       for(let i=0;i<e.results.length;i++){const r=e.results[i];
-        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);const t=r[0].transcript,tag="s"+wsSession+"_"+i,ea=wsEarly[i];
+        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);const t=bestAlt(r),tag="s"+wsSession+"_"+i,ea=wsEarly[i];
           if(ea){if(norm(ea.text)!==norm(t)){revertTag(ea.tag);onHeard(t,tag+"f")}}else onHeard(t,tag)}}
         else{im+=r[0].transcript;lastIdx=i}}
       onPartialText(im);
@@ -1305,10 +1433,22 @@ function startWS(){
         // speaker paused 0.6 s and the phrase is unambiguous: count it now instead of waiting for Safari
         wsTimer=setTimeout(()=>{if(wsDone.has(idx)||wsEarly[idx])return;if(confident(txt)){const tag="s"+wsSession+"_"+idx;wsEarly[idx]={text:txt,tag};onHeard(txt,tag)}},600)}
     };
-    wsRec.onerror=e=>{if(!started)rej({code:/not-allowed|service-not-allowed/.test(e.error)?"not_granted":"upstream_error"});else if(e.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}};
+    wsRec.onerror=e=>{
+      if(e.error==="network"){netFail();if(!started)rej({code:"network"});return}
+      if(!started)rej({code:/not-allowed|service-not-allowed/.test(e.error)?"not_granted":"upstream_error"});else if(e.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}};
     wsRec.onend=()=>{wsActive=false;setMic(false);if(locked&&wsRec)setTimeout(()=>{try{wsRec.start()}catch(e){}},250)};
     wsRec.start();
   }catch(e){rej({code:"unavailable"})}});
+}
+// without coverage Safari's page dictation may not work; the keyboard's own dictation does (it runs on the phone)
+let netWarned=0;
+function netFail(){
+  if(Date.now()-netWarned<20000)return;netWarned=Date.now();
+  if(locked){unlock()}
+  wsRec=null;
+  $("form").hidden=false;go("contar");
+  $("live").innerHTML="Sin cobertura, el micro de la app no funciona. Toca la casilla de abajo y usa el <b>micrófono del teclado</b>: funciona sin conexión.";
+  toast("Sin cobertura: usa el micro del teclado");
 }
 function stopWS(){const r=wsRec;wsRec=null;try{r&&r.stop()}catch(e){}wsActive=false;setMic(false)}
 const startListening=()=>dict?dict.start({language:"es"}):startWS();
@@ -1317,6 +1457,7 @@ const isActive=()=>dict?dict.active():wsActive;
 function startErr(err){const c=err&&err.code;
   if(c==="not_granted"||c==="unavailable"){dict=null;if(!SR||c==="not_granted"){noMic();if(locked)unlock()}}
   else if(c==="no_gesture"){if(locked)setMic(false)}
+  else if(c==="network"){}
   else if(c!=="stopped"&&c!=="dismissed")toast("Error del micrófono ("+(c||"?")+")");}
 mic.addEventListener("click",()=>{if(!dict&&!SR){$("form").hidden=false;$("txt").focus();return}if(listening||isActive()){stopListening();return}startListening().catch(startErr)});
 async function keepAwake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
@@ -1354,13 +1495,18 @@ function feedback(say,shown,kind,important){if(!locked)return;vib(kind);$("pkLas
   }catch(e){noMic()}
 })();
 
+/* ================= offline ================= */
+if("serviceWorker" in navigator&&!framed&&location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}
+function renderNet(){const off=navigator.onLine===false;$("netLbl").hidden=!off}
+window.addEventListener("online",renderNet);window.addEventListener("offline",renderNet);
+
 /* ================= start ================= */
 load();
 $("resp").value=S.resp||"";
 [...$("mode").children].forEach(x=>x.classList.toggle("act",x.dataset.m===S.mode));
 [...$("askSeg").children].forEach(x=>x.classList.toggle("act",(x.dataset.a==="1")===!!S.ask));
 [...$("fbSeg").children].forEach(x=>x.classList.toggle("act",x.dataset.f===(S.fb||"all")));
-renderAll();
+renderAll();renderNet();
 })();
 </script>
 </body>
