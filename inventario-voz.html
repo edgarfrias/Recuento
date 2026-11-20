@@ -1681,27 +1681,59 @@ function bestAlt(res){
   return best;
 }
 function onPartialText(t){$("live").textContent=t?("… "+t):"";$("pkLive").textContent=t||""}
+// Each recording is its own recogniser: events from an old one (still closing after a pause) are ignored,
+// so they can't mark the new phrases as already used or flip the button off.
+let wsInst=0,wsStopping=null;
+function makeRec(onFirstStart,onFirstFail){
+  const rec=new SR();rec.lang="es-ES";rec.continuous=true;rec.interimResults=true;try{rec.maxAlternatives=5}catch(e){}
+  const my=++wsInst;let gen=0,done=new Set(),started=false;
+  const mine=()=>wsRec===rec||(wsStopping===rec&&!wsRec);
+  rec.onstart=()=>{if(wsRec!==rec)return;gen++;done=new Set();started=true;wsActive=true;setMic(true);onFirstStart&&onFirstStart();onFirstStart=null};
+  rec.onresult=e=>{
+    if(!mine())return;
+    const key=i=>"s"+my+"_"+gen+"_"+i;
+    // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
+    let im="",lastIdx=-1;
+    for(let i=0;i<e.results.length;i++){const r=e.results[i];
+      if(r.isFinal){if(!done.has(i)){done.add(i);onFinalText(bestAlt(r),key(i))}}
+      else{im+=r[0].transcript;lastIdx=i}}
+    if(wsRec===rec){onPartialText(im);if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,key(lastIdx))}
+  };
+  rec.onerror=ev=>{
+    if(wsRec!==rec)return;
+    if(ev.error==="network"){netFail();if(!started&&onFirstFail){onFirstFail({code:"network"});onFirstFail=null}return}
+    if(!started&&onFirstFail){const f=onFirstFail;onFirstFail=null;f({code:/not-allowed|service-not-allowed/.test(ev.error)?"not_granted":ev.error||"upstream_error"});return}
+    if(ev.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}
+  };
+  rec.onend=()=>{
+    if(wsStopping===rec)wsStopping=null;
+    if(wsRec!==rec)return;           // an old recogniser finishing: leave the current one alone
+    wsActive=false;setMic(false);
+    if(locked)setTimeout(()=>{if(wsRec===rec){try{rec.start()}catch(e){}}},60);
+  };
+  return rec;
+}
 function startWS(){
   if(!SR)return Promise.reject({code:"unavailable"});
-  return new Promise((res,rej)=>{try{
-    wsRec=new SR();wsRec.lang="es-ES";wsRec.continuous=true;wsRec.interimResults=true;try{wsRec.maxAlternatives=5}catch(e){}let started=false;
-    wsRec.onstart=()=>{started=true;wsActive=true;wsDone=new Set();wsEarly={};wsSession++;setMic(true);res()};
-    wsRec.onresult=e=>{
-      // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
-      let im="",lastIdx=-1;
-      for(let i=0;i<e.results.length;i++){const r=e.results[i];
-        if(r.isFinal){if(!wsDone.has(i)){wsDone.add(i);onFinalText(bestAlt(r),"s"+wsSession+"_"+i)}}
-        else{im+=r[0].transcript;lastIdx=i}}
-      onPartialText(im);
-      if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,"s"+wsSession+"_"+lastIdx);
+  // close whatever was left from the last recording, right now (we are inside the tap)
+  const old=wsRec||wsStopping;wsRec=null;wsStopping=null;
+  if(old){try{old.abort()}catch(e){}}
+  return new Promise((res,rej)=>{
+    let tries=0;
+    const go=()=>{
+      tries++;
+      const rec=makeRec(res,err=>{
+        // Safari sometimes refuses a start while the old mic is still releasing: try once more
+        if(tries<2&&err.code!=="not_granted"&&err.code!=="network"){wsRec=null;setTimeout(()=>{go()},350);return}
+        wsRec=null;rej(err);
+      });
+      wsRec=rec;
+      try{rec.start()}catch(e){if(tries<2){wsRec=null;setTimeout(go,350)}else{wsRec=null;rej({code:"unavailable"})}}
     };
-    wsRec.onerror=e=>{
-      if(e.error==="network"){netFail();if(!started)rej({code:"network"});return}
-      if(!started)rej({code:/not-allowed|service-not-allowed/.test(e.error)?"not_granted":"upstream_error"});else if(e.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}};
-    wsRec.onend=()=>{wsActive=false;setMic(false);if(locked&&wsRec)setTimeout(()=>{try{wsRec.start()}catch(e){}},60)};
-    wsRec.start();
-  }catch(e){rej({code:"unavailable"})}});
+    go();
+  });
 }
+function stopWS(){const r=wsRec;wsRec=null;wsStopping=r;wsActive=false;setMic(false);try{r&&r.stop()}catch(e){}}
 // without coverage Safari's page dictation may not work; the keyboard's own dictation does (it runs on the phone)
 let netWarned=0;
 function netFail(){
@@ -1712,7 +1744,7 @@ function netFail(){
   $("live").innerHTML="Sin cobertura, el micro de la app no funciona. Toca la casilla de abajo y usa el <b>micrófono del teclado</b>: funciona sin conexión.";
   toast("Sin cobertura: usa el micro del teclado");
 }
-function stopWS(){const r=wsRec;wsRec=null;try{r&&r.stop()}catch(e){}wsActive=false;setMic(false)}
+
 const startListening=()=>dict?dict.start({language:"es"}):startWS();
 function stopListening(){if(dict){try{dict.stop()}catch(e){}}stopWS()}
 const isActive=()=>dict?dict.active():wsActive;
