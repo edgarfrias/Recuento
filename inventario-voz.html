@@ -75,6 +75,7 @@ button{font:inherit;color:inherit}
 #mic{width:148px;height:148px;border-radius:50%;border:0;background:var(--on);color:var(--blue);display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 12px rgba(255,255,255,.08),0 18px 40px rgba(4,20,45,.35);transition:transform .15s}
 #mic:active{transform:scale(.97)}
 #mic svg{width:58px;height:58px}
+#mic.paused{background:#FFC94D;color:var(--blue-lo)}
 #mic.on{background:var(--bad);color:#fff;animation:ring 1.6s infinite}
 @keyframes ring{0%{box-shadow:0 0 0 0 rgba(255,255,255,.35),0 18px 40px rgba(4,20,45,.35)}70%{box-shadow:0 0 0 30px rgba(255,255,255,0),0 18px 40px rgba(4,20,45,.35)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0),0 18px 40px rgba(4,20,45,.35)}}
 #micState{font-size:17px;font-weight:600}
@@ -308,7 +309,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
     <div id="pendList"></div>
     <div id="lastBox"></div>
   </section>
-  <div class="credit">Stockify by Edgar Frías · versión 12</div>
+  <div class="credit">Stockify by Edgar Frías · versión 13</div>
 </div>
 
 <nav class="nav" id="tabbar">
@@ -392,6 +393,10 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
   <p style="margin-top:6px">Por ejemplo, una foto de tu almacén. Se oscurece en azul para que se lea todo bien. Se guarda solo en este móvil.</p>
   <h4>Este local</h4>
   <div class="actions"><button class="btn sm" id="editArtBtn">Editar artículos</button><button class="btn sm" id="editZoneBtn">Editar zonas</button></div>
+  <details class="help"><summary>Diagnóstico del micro</summary>
+    <p style="margin:8px 0">Si el micro falla, haz una captura de esto y mándamela.</p>
+    <pre id="micDiag" style="white-space:pre-wrap;font-size:12px;background:var(--bg);border-radius:10px;padding:10px;max-height:260px;overflow:auto">Sin datos todavía</pre>
+  </details>
   <details class="help"><summary>Qué puedo decir</summary>
     <ul>
       <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>.</li>
@@ -1461,7 +1466,7 @@ $("aliasTxt").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefaul
 let teaching=null;
 $("teachBtn").onclick=()=>{
   if(!dict&&!SR){$("aliasTxt").focus();toast("Aquí no hay micrófono: escríbelo");return}
-  teaching=pzId;$("teachBtn").textContent="Escuchando… di el nombre";
+  teaching=pzId;$("teachBtn").textContent="Escuchando… di el nombre";if(wsPaused)resumeWS();
   if(!isActive())startListening().catch(startErr);
   setTimeout(()=>{if(teaching){teaching=null;$("teachBtn").textContent="🎤 Enséñale"}},8000);
 };
@@ -1632,7 +1637,7 @@ $("restoreBtn").onclick=()=>{const b=L.backup;if(!b)return;
 /* ================= microphone ================= */
 let dict=null,listening=false,locked=false,wakeLock=null,wsRec=null,wsActive=false;
 const mic=$("mic"),SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-function setMic(on){listening=on;mic.classList.toggle("on",on);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando… toca para parar":"Toca para grabar";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
+function setMic(on,paused){listening=on;mic.classList.toggle("on",on);mic.classList.toggle("paused",!!paused);mic.setAttribute("aria-label",on?"Dejar de escuchar":"Empezar a escuchar");$("micState").textContent=on?"Escuchando… toca para pausar":paused?"En pausa · toca para seguir":"Toca para grabar";$("pkDot").classList.toggle("off",!on);$("pkResume").style.display=locked&&!on?"inline-flex":"none"}
 function noMic(){$("micState").textContent="Micro no disponible aquí";$("live").innerHTML="Escribe abajo o usa el micrófono del teclado.";$("lockBtn").hidden=true;$("form").hidden=false}
 function onHeard(t,tag){$("live").textContent="";$("pkLive").textContent="";t=t.trim();if(!t)return;
   if(teaching){const p=byId(teaching);teaching=null;$("teachBtn").textContent="🎤 Enséñale";if(addAlias(p,t))toast(`Aprendido: «${t}»`);return}
@@ -1683,20 +1688,25 @@ function bestAlt(res){
 function onPartialText(t){$("live").textContent=t?("… "+t):"";$("pkLive").textContent=t||""}
 // iPhone Safari copes badly with several recognisers: keep ONE and start/stop it.
 // Results that arrive between "stop" and the next real start belong to the old take and are ignored.
+const micLog=[];function mlog(t){micLog.push(new Date().toLocaleTimeString("es-ES")+" "+t);if(micLog.length>60)micLog.shift();const el=document.getElementById("micDiag");if(el)el.textContent=micLog.slice().reverse().join("\n")}
+let wsPaused=false,wsPauseTimer=null,wsLastLen=0,wsMarkAll=null;
 let wsOne=null,wsGen=0,wsAccept=false,wsWant=false,wsDog=null,wsAudio=false,wsStartAt=0,wsFails=0;
 let wsResolve=null,wsReject=null,wsAudioSeen=false,wsDogUsed=false;
 function buildRec(){
   const rec=new SR();rec.lang="es-ES";rec.continuous=true;rec.interimResults=true;try{rec.maxAlternatives=5}catch(e){}
   let done=new Set();
-  rec.onstart=()=>{if(rec!==wsOne)return;wsGen++;done=new Set();wsAccept=true;wsActive=true;wsAudio=false;setMic(true);
+  rec.onstart=()=>{mlog("start");if(rec!==wsOne)return;wsLastLen=0;wsMarkAll=()=>{for(let i=0;i<wsLastLen;i++)done.add(i)};wsGen++;done=new Set();wsAccept=true;wsActive=true;wsAudio=false;if(wsPaused)setMic(false,true);else setMic(true);
     if(wsResolve){wsResolve();wsResolve=wsReject=null}
     // watchdog: Safari says it listens but no sound arrives -> restart it
     // only where this phone has shown it reports "sound started"; once per take, never in a loop
     clearTimeout(wsDog);if(wsAudioSeen&&!wsDogUsed)wsDog=setTimeout(()=>{if(rec===wsOne&&wsWant&&!wsAudio){wsDogUsed=true;hardRestart()}},1600)};
-  rec.onaudiostart=()=>{wsAudioSeen=true;if(rec===wsOne){wsAudio=true;wsDogUsed=false}};
+  rec.onaudiostart=()=>{mlog("audio");wsAudioSeen=true;if(rec===wsOne){wsAudio=true;wsDogUsed=false}};
   rec.onspeechstart=()=>{if(rec===wsOne)wsAudio=true};
   rec.onresult=e=>{
     if(rec!==wsOne||!wsAccept)return;
+    wsLastLen=e.results.length;
+    const lr=e.results[e.results.length-1];mlog(`resultado ${e.results.length}${lr&&lr.isFinal?" final":""}: ${lr?lr[0].transcript.slice(0,40):""}${wsPaused?" (en pausa, ignorado)":""}`);
+    if(wsPaused){return}
     wsAudio=true;wsFails=0;
     const key=i=>"s"+wsGen+"_"+i;
     let im="",lastIdx=-1;
@@ -1706,12 +1716,14 @@ function buildRec(){
     onPartialText(im);if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,key(lastIdx));
   };
   rec.onerror=ev=>{
+    mlog("error "+ev.error);
     if(rec!==wsOne)return;
     if(ev.error==="network"){netFail();if(wsReject){wsReject({code:"network"});wsResolve=wsReject=null}return}
     if(/not-allowed|service-not-allowed/.test(ev.error)){wsWant=false;if(wsReject){wsReject({code:"not_granted"});wsResolve=wsReject=null}if(locked)unlock();return}
     // "aborted", "no-speech", "audio-capture": onend follows and we restart if still wanted
   };
   rec.onend=()=>{
+    mlog("end"+(rec===wsOne?"":" (antiguo)"));
     if(rec!==wsOne)return;
     wsAccept=false;wsActive=false;clearTimeout(wsDog);
     if(wsWant){ // still wanted (pocket mode, or Safari closed it by itself): start again
@@ -1745,6 +1757,7 @@ function startWS(){
   });
 }
 function stopWS(){
+  wsPaused=false;clearTimeout(wsPauseTimer);mlog("paro el micro");
   wsWant=false;wsAccept=false;wsActive=false;clearTimeout(wsDog);setMic(false);
   try{wsOne&&wsOne.stop()}catch(e){}
 }
@@ -1767,14 +1780,29 @@ function startErr(err){const c=err&&err.code;
   else if(c==="no_gesture"){if(locked)setMic(false)}
   else if(c==="network"){}
   else if(c!=="stopped"&&c!=="dismissed")toast("Error del micrófono ("+(c||"?")+")");}
+function pauseWS(){
+  wsPaused=true;mlog("pausa");$("live").textContent="";clearTimeout(early.timer);setMic(false,true);
+  clearTimeout(wsPauseTimer);wsPauseTimer=setTimeout(()=>{if(wsPaused){mlog("pausa larga: apago el micro");wsPaused=false;stopWS()}},10*60*1000);
+}
+function resumeWS(){
+  clearTimeout(wsPauseTimer);
+  if(wsOne&&wsActive){ // the mic never stopped: just listen again, nothing for Safari to restart
+    wsMarkAll&&wsMarkAll();wsPaused=false;mlog("reanudo (mismo micro)");setMic(true);return true}
+  wsPaused=false;return false;
+}
 mic.addEventListener("click",()=>{if(!dict&&!SR){$("form").hidden=false;$("txt").focus();return}
+  if(!dict){
+    if(wsWant&&!wsPaused){pauseWS();return}
+    if(wsPaused&&resumeWS())return;
+    mlog("toque: arranco el micro");startListening().catch(startErr);return;
+  }
   if(listening||isActive()){stopListening();return}
   startListening().catch(startErr)});
 async function keepAwake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
 function lock(){
   if(!dict&&!SR)return;
   locked=true;$("pocket").classList.add("open");$("pkZone").textContent=zName(curZone());$("pkLast").textContent="Escuchando";
-  keepAwake();if(!isActive())startListening().catch(startErr);setMic(isActive()||listening);
+  keepAwake();if(wsPaused&&resumeWS()){}else if(!isActive())startListening().catch(startErr);setMic(isActive()||listening);
 }
 function unlock(){locked=false;$("pocket").classList.remove("open");try{wakeLock&&wakeLock.release()}catch(e){}wakeLock=null;try{speechSynthesis.cancel()}catch(e){}stopListening()}
 $("lockBtn").onclick=lock;
