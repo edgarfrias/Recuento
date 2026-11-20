@@ -308,7 +308,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
     <div id="pendList"></div>
     <div id="lastBox"></div>
   </section>
-  <div class="credit">Stockify by Edgar Frías</div>
+  <div class="credit">Stockify by Edgar Frías · versión 12</div>
 </div>
 
 <nav class="nav" id="tabbar">
@@ -1681,65 +1681,79 @@ function bestAlt(res){
   return best;
 }
 function onPartialText(t){$("live").textContent=t?("… "+t):"";$("pkLive").textContent=t||""}
-// Each recording is its own recogniser: events from an old one (still closing after a pause) are ignored,
-// so they can't mark the new phrases as already used or flip the button off.
-let wsInst=0,wsStopping=null;
-function makeRec(onFirstStart,onFirstFail){
+// iPhone Safari copes badly with several recognisers: keep ONE and start/stop it.
+// Results that arrive between "stop" and the next real start belong to the old take and are ignored.
+let wsOne=null,wsGen=0,wsAccept=false,wsWant=false,wsDog=null,wsAudio=false,wsStartAt=0,wsFails=0;
+let wsResolve=null,wsReject=null,wsAudioSeen=false,wsDogUsed=false;
+function buildRec(){
   const rec=new SR();rec.lang="es-ES";rec.continuous=true;rec.interimResults=true;try{rec.maxAlternatives=5}catch(e){}
-  const my=++wsInst;let gen=0,done=new Set(),started=false;
-  const mine=()=>wsRec===rec||(wsStopping===rec&&!wsRec);
-  rec.onstart=()=>{if(wsRec!==rec)return;gen++;done=new Set();started=true;wsActive=true;setMic(true);onFirstStart&&onFirstStart();onFirstStart=null};
+  let done=new Set();
+  rec.onstart=()=>{if(rec!==wsOne)return;wsGen++;done=new Set();wsAccept=true;wsActive=true;wsAudio=false;setMic(true);
+    if(wsResolve){wsResolve();wsResolve=wsReject=null}
+    // watchdog: Safari says it listens but no sound arrives -> restart it
+    // only where this phone has shown it reports "sound started"; once per take, never in a loop
+    clearTimeout(wsDog);if(wsAudioSeen&&!wsDogUsed)wsDog=setTimeout(()=>{if(rec===wsOne&&wsWant&&!wsAudio){wsDogUsed=true;hardRestart()}},1600)};
+  rec.onaudiostart=()=>{wsAudioSeen=true;if(rec===wsOne){wsAudio=true;wsDogUsed=false}};
+  rec.onspeechstart=()=>{if(rec===wsOne)wsAudio=true};
   rec.onresult=e=>{
-    if(!mine())return;
-    const key=i=>"s"+my+"_"+gen+"_"+i;
-    // walk every result: Safari on iPhone sometimes resends old ones, so remember which we used
+    if(rec!==wsOne||!wsAccept)return;
+    wsAudio=true;wsFails=0;
+    const key=i=>"s"+wsGen+"_"+i;
     let im="",lastIdx=-1;
     for(let i=0;i<e.results.length;i++){const r=e.results[i];
       if(r.isFinal){if(!done.has(i)){done.add(i);onFinalText(bestAlt(r),key(i))}}
       else{im+=r[0].transcript;lastIdx=i}}
-    if(wsRec===rec){onPartialText(im);if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,key(lastIdx))}
+    onPartialText(im);if(lastIdx>=0)onInterim(e.results[lastIdx][0].transcript,key(lastIdx));
   };
   rec.onerror=ev=>{
-    if(wsRec!==rec)return;
-    if(ev.error==="network"){netFail();if(!started&&onFirstFail){onFirstFail({code:"network"});onFirstFail=null}return}
-    if(!started&&onFirstFail){const f=onFirstFail;onFirstFail=null;f({code:/not-allowed|service-not-allowed/.test(ev.error)?"not_granted":ev.error||"upstream_error"});return}
-    if(ev.error==="not-allowed"){if(locked)unlock();toast("Micrófono bloqueado")}
+    if(rec!==wsOne)return;
+    if(ev.error==="network"){netFail();if(wsReject){wsReject({code:"network"});wsResolve=wsReject=null}return}
+    if(/not-allowed|service-not-allowed/.test(ev.error)){wsWant=false;if(wsReject){wsReject({code:"not_granted"});wsResolve=wsReject=null}if(locked)unlock();return}
+    // "aborted", "no-speech", "audio-capture": onend follows and we restart if still wanted
   };
   rec.onend=()=>{
-    if(wsStopping===rec)wsStopping=null;
-    if(wsRec!==rec)return;           // an old recogniser finishing: leave the current one alone
-    wsActive=false;setMic(false);
-    if(locked)setTimeout(()=>{if(wsRec===rec){try{rec.start()}catch(e){}}},60);
+    if(rec!==wsOne)return;
+    wsAccept=false;wsActive=false;clearTimeout(wsDog);
+    if(wsWant){ // still wanted (pocket mode, or Safari closed it by itself): start again
+      setTimeout(()=>{if(rec===wsOne&&wsWant){try{rec.start()}catch(e){hardRestart()}}},80);
+    }else setMic(false);
   };
   return rec;
 }
+function hardRestart(){
+  wsFails++;
+  const old=wsOne;wsOne=null;wsAccept=false;
+  try{old&&old.abort()}catch(e){}
+  if(wsFails>4){wsWant=false;setMic(false);toast("El micro no responde: toca grabar otra vez o recarga la página");return}
+  wsOne=buildRec();
+  try{wsOne.start()}catch(e){}
+}
 function startWS(){
   if(!SR)return Promise.reject({code:"unavailable"});
-  // close whatever was left from the last recording, right now (we are inside the tap)
-  const old=wsRec||wsStopping;wsRec=null;wsStopping=null;
-  if(old){try{old.abort()}catch(e){}}
+  wsWant=true;wsFails=0;wsDogUsed=false;
   return new Promise((res,rej)=>{
-    let tries=0;
-    const go=()=>{
-      tries++;
-      const rec=makeRec(res,err=>{
-        // Safari sometimes refuses a start while the old mic is still releasing: try once more
-        if(tries<2&&err.code!=="not_granted"&&err.code!=="network"){wsRec=null;setTimeout(()=>{go()},350);return}
-        wsRec=null;rej(err);
-      });
-      wsRec=rec;
-      try{rec.start()}catch(e){if(tries<2){wsRec=null;setTimeout(go,350)}else{wsRec=null;rej({code:"unavailable"})}}
-    };
-    go();
+    wsResolve=res;wsReject=rej;
+    if(!wsOne)wsOne=buildRec();
+    // a tap while it was still closing, or a stuck mic: start from scratch (still inside the tap)
+    if(wsActive||Date.now()-wsStartAt<400){try{wsOne.abort()}catch(e){}wsOne=buildRec()}
+    wsStartAt=Date.now();wsAccept=false;
+    try{wsOne.start()}catch(e){
+      // "already started": throw this one away and use a fresh one right now
+      try{wsOne.abort()}catch(_){}wsOne=buildRec();try{wsOne.start()}catch(e2){wsWant=false;rej({code:"unavailable"})}
+    }
+    setTimeout(()=>{if(wsResolve===res){ /* no onstart: give the user a working state anyway */ hardRestart()}},2500);
   });
 }
-function stopWS(){const r=wsRec;wsRec=null;wsStopping=r;wsActive=false;setMic(false);try{r&&r.stop()}catch(e){}}
+function stopWS(){
+  wsWant=false;wsAccept=false;wsActive=false;clearTimeout(wsDog);setMic(false);
+  try{wsOne&&wsOne.stop()}catch(e){}
+}
 // without coverage Safari's page dictation may not work; the keyboard's own dictation does (it runs on the phone)
 let netWarned=0;
 function netFail(){
   if(Date.now()-netWarned<20000)return;netWarned=Date.now();
   if(locked){unlock()}
-  wsRec=null;
+  wsWant=false;
   $("form").hidden=false;go("contar");
   $("live").innerHTML="Sin cobertura, el micro de la app no funciona. Toca la casilla de abajo y usa el <b>micrófono del teclado</b>: funciona sin conexión.";
   toast("Sin cobertura: usa el micro del teclado");
@@ -1747,13 +1761,15 @@ function netFail(){
 
 const startListening=()=>dict?dict.start({language:"es"}):startWS();
 function stopListening(){if(dict){try{dict.stop()}catch(e){}}stopWS()}
-const isActive=()=>dict?dict.active():wsActive;
+const isActive=()=>dict?dict.active():(wsActive||wsWant);
 function startErr(err){const c=err&&err.code;
   if(c==="not_granted"||c==="unavailable"){dict=null;if(!SR||c==="not_granted"){noMic();if(locked)unlock()}}
   else if(c==="no_gesture"){if(locked)setMic(false)}
   else if(c==="network"){}
   else if(c!=="stopped"&&c!=="dismissed")toast("Error del micrófono ("+(c||"?")+")");}
-mic.addEventListener("click",()=>{if(!dict&&!SR){$("form").hidden=false;$("txt").focus();return}if(listening||isActive()){stopListening();return}startListening().catch(startErr)});
+mic.addEventListener("click",()=>{if(!dict&&!SR){$("form").hidden=false;$("txt").focus();return}
+  if(listening||isActive()){stopListening();return}
+  startListening().catch(startErr)});
 async function keepAwake(){try{if(navigator.wakeLock&&document.visibilityState==="visible")wakeLock=await navigator.wakeLock.request("screen")}catch(e){wakeLock=null}}
 function lock(){
   if(!dict&&!SR)return;
