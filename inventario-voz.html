@@ -57,6 +57,16 @@ button{font:inherit;color:inherit}
 .bar div{height:100%;background:var(--on);width:0;transition:width .4s}
 #flap{display:none}
 
+.micRow{display:flex;align-items:center;justify-content:center;gap:18px}
+.sideSlot{width:64px;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1}
+.sideSlot small{font-size:12px;color:var(--on-2);font-weight:600}
+#cancelBtn{width:58px;height:58px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer}
+#cancelBtn svg{width:24px;height:24px}
+#cancelBtn:active{background:rgba(255,120,100,.35)}
+.note.ask{border-color:rgba(255,255,255,.5);background:rgba(255,255,255,.14)}
+.note .yn2{display:flex;gap:6px;flex:none}
+.note .yn2 button{border:0;border-radius:9px;padding:8px 11px;font-weight:700;cursor:pointer;font-size:14px}
+.note .yn2 .y{background:var(--bad);color:#fff}.note .yn2 .n{background:rgba(255,255,255,.18);color:#fff}
 .micRing{position:relative;display:grid;place-items:center}
 .micRing::before{content:"";position:absolute;width:330px;height:330px;border-radius:50%;pointer-events:none;
   background:repeating-radial-gradient(circle,rgba(255,255,255,0) 0 22px,rgba(255,255,255,.07) 23px 24px);
@@ -274,9 +284,13 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
   </section>
 
   <section class="recWrap">
-    <div class="micRing"><button id="mic" aria-label="Grabar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
-    </button></div>
+    <div class="micRow">
+      <span class="sideSlot"></span>
+      <div class="micRing"><button id="mic" aria-label="Grabar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v5"/></svg>
+      </button></div>
+      <span class="sideSlot"><button id="cancelBtn" aria-label="Cancelar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button><small>Cancelar</small></span>
+    </div>
     <div id="micState">Toca para grabar</div>
     <div id="live"></div>
     <div class="subActs">
@@ -383,6 +397,7 @@ details.help q{color:var(--ink);font-weight:600;quotes:"«" "»"}
       <li>Zona: <q>voy a contar la cámara positiva</q>, <q>pasamos a la barra</q>.</li>
       <li>Artículo y cantidad, en cualquier orden: <q>doce leche</q>, <q>bitel 74</q>. Con pausa para contar: <q>leche</q> … <q>doce</q>.</li>
       <li>Varios seguidos: <q>leche doce, bitel setenta y cuatro</q>.</li>
+      <li><q>cancelar</q>: te pregunta si borra el último artículo; contesta <q>sí</q> o <q>no</q>. El botón ✕ hace lo mismo y además borra lo que esté a medias.</li>
       <li>Corregir: <q>no</q>, <q>no, la veri pequeña</q>, <q>no, quince</q>. <q>deshacer</q> anula lo último.</li>
       <li>Preguntas: <q>¿cuánto hay en la barra?</q>, <q>¿cuánta leche hay?</q>, <q>resumen general</q>.</li>
     </ul>
@@ -1067,6 +1082,27 @@ function askAloud(o){
 /* ================= understanding what was said ================= */
 let lastHeard={t:"",at:0},heldQty=null;
 function renderHeld(){const el=$("heldBox");if(!el)return;el.hidden=!heldQty;if(heldQty)el.textContent=`Tengo ${fmt(heldQty.q)}… di el artículo`}
+/* ---- cancel: drop what is half-said, or ask before deleting the last article ---- */
+let cancelAsk=null;
+function hasHalf(){return !!(heldQty||L.pending.some(x=>!x.stale)||($("live").textContent||"").trim())}
+function clearHalf(){heldQty=null;renderHeld();L.pending=[];$("live").textContent="";$("pkLive").textContent="";
+  try{clearTimeout(early.timer)}catch(e){}save();renderPending()}
+function askCancel(fromVoice){
+  if(hasHalf()){clearHalf();toast("Cancelado");feedback("Cancelado","Cancelado",2,true);return}
+  const e=L.log.find(x=>byId(x.pid));
+  if(!e){toast("No hay nada que cancelar");feedback("No hay nada que borrar","Nada que borrar",2,true);return}
+  cancelAsk={e,at:Date.now()};renderPending();
+  const p=byId(e.pid);
+  feedback(`¿Borro ${spokenName(p)} ${fmt(e.next)}? Sí o no`,`¿Borrar ${label(p)} · ${fmt(e.next)}?`,3,true);
+  if(!locked&&fromVoice)say(`¿Borro ${spokenName(p)} ${fmt(e.next)}?`);
+}
+function answerCancel(yes){
+  const c=cancelAsk;cancelAsk=null;
+  if(!c){renderPending();return}
+  if(yes&&L.log.includes(c.e)){const p=byId(c.e.pid);revertEntry(c.e);lastAct=null;save();renderAll();toast("Borrado: "+label(p));feedback("Borrado","Borrado: "+label(p),2,true)}
+  else{renderPending();toast("No se ha borrado nada")}
+}
+$("cancelBtn").onclick=()=>askCancel(false);
 function handleText(text,fromVoice,tag){
   if(fromVoice){
     if(isEcho(text))return;
@@ -1079,6 +1115,14 @@ function handleText(text,fromVoice,tag){
   // a correction can come split by a comma: "no, la veri pequeña"
   for(let i=0;i<parts.length-1;i++){if(/^(no|no es|no era|ese no|esa no)$/i.test(norm(parts[i]))){parts.splice(i,2,parts[i]+" "+parts[i+1])}}
   for(const ph0 of parts){
+    const nc=norm(ph0);
+    if(/^(cancelar|cancela|cancelalo|cancelo|anula eso|borralo|borra eso)$/.test(nc)){askCancel(fromVoice);continue}
+    if(cancelAsk){
+      if(Date.now()-cancelAsk.at>30000)cancelAsk=null;
+      else if(/^(si|sii|vale|si borra|si borralo|borra|borralo|confirmo|correcto|ok|eso)$/.test(nc)){answerCancel(true);continue}
+      else if(/^(no|nop|dejalo|no borres|no lo borres)$/.test(nc)){answerCancel(false);continue}
+      else{cancelAsk=null;renderPending()} // carrying on counting means "keep it"
+    }
     // "pepsi 47 más 13", "más 13", "menos 2": the extra amount goes to the last article
     const segs=splitOps(ph0);
     for(const sg of segs){
@@ -1189,7 +1233,7 @@ function handleOne(ph,fromVoice,tag){
 // commit early only when there is no doubt at all
 function confident(text){
   const parts=text.split(/[;,.]+/).flatMap(p=>splitOps(p)).filter(sg=>!sg.op).map(sg=>sg.text).filter(s=>s&&s.trim());if(!parts.length)return false;
-  return parts.every(ph=>{const n=norm(ph);if(/^(no|si|vale|el otro|la otra|otro|otra|error|deshacer)\b/.test(n))return false;if(parseCommand(L.items,L.zones,ph))return false;
+  return parts.every(ph=>{const n=norm(ph);if(/^(no|si|vale|el otro|la otra|otro|otra|error|deshacer|cancel|borra|anula)/.test(n))return false;if(parseCommand(L.items,L.zones,ph))return false;
     const items=parseMulti(L.items,ph);return items.length&&items.every(r=>!r.cmd&&r.qty!=null&&r.query&&(()=>{const ch=chooseSmart(r);return ch&&!ch.dud&&ch.score>=.8})())});
 }
 
@@ -1230,8 +1274,9 @@ function renderLast(){
 }
 function renderPending(){
   renderBoard();
+  const askHtml=cancelAsk&&byId(cancelAsk.e.pid)?`<div class="note ask"><div class="nt"><b>¿Borrar ${esc(byId(cancelAsk.e.pid).name)}?</b><small>${esc(zName(cancelAsk.e.zone||NOZONE))} · ${fmt(cancelAsk.e.next)} ${esc(byId(cancelAsk.e.pid).unit)} · también puedes decir «sí» o «no»</small></div><span class="yn2"><button class="y" data-cy>Sí, borrar</button><button class="n" data-cn>No</button></span></div>`:"";
   if(!S.ask){
-    $("pendList").innerHTML=L.pending.filter(pd=>!pd.stale).slice(0,2).map(pd=>{
+    $("pendList").innerHTML=askHtml+L.pending.filter(pd=>!pd.stale).slice(0,2).map(pd=>{
       if(pd.kind==="unknown")return `<div class="note bad" data-pid="${pd.id}"><div class="nt"><b>No he entendido</b><small>«${esc(pd.raw)}» · repítelo</small></div><button class="nx" data-drop aria-label="Quitar">×</button></div>`;
       const p=byId(pd.opts[0]);
       return `<div class="note wait" data-pid="${pd.id}"><span class="pulse"></span><div class="nt"><b>${esc(p?p.name:pd.raw)}</b><small>Esperando la cantidad…</small></div><button class="nx" data-drop aria-label="Quitar">×</button></div>`;
@@ -1376,6 +1421,8 @@ $("list").addEventListener("click",e=>{
 function pendOf(el){const box=el.closest(".pend,.note");return box?[box,L.pending.find(x=>x.id===box.dataset.pid)]:[null,null]}
 function boxQty(box,pd){if(pd.qty!=null)return null;const i=box.querySelector(".pq");if(!i)return null;const v=parseFloat(i.value.replace(",","."));return isNaN(v)?null:v}
 $("pendList").addEventListener("click",e=>{
+  if(e.target.closest("[data-cy]"))return answerCancel(true);
+  if(e.target.closest("[data-cn]"))return answerCancel(false);
   const t=e.target.closest("button");if(!t)return;const [box,pd]=pendOf(t);if(!pd)return;
   if(t.dataset.pick)resolvePending(pd,t.dataset.pick,boxQty(box,pd));
   else if(t.hasAttribute("data-no"))rejectFirst(pd);
